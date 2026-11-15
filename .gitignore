@@ -1,0 +1,28 @@
+# Build products and local tool state
+build/
+cmake-build-*/
+.cache/
+.sdk-tools/
+*.o
+*.a
+*.so
+*.dll
+*.dylib
+
+# Generated plugin packages and test renders
+dist/
+packages/
+*.wav
+
+# Proprietary or device-derived material must never be committed
+*.rom
+*.bin
+*.img
+firmware/
+roms/
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
