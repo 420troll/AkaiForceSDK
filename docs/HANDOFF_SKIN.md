@@ -13,10 +13,9 @@ The pages are ROUTING, UNIT A-D, and MOD A-D. Each unit page presents common
 controls and conditional VCF Distortion / Compressor controls. Each modulation
 page binds both stable, per-unit slots directly: Enabled, Source, Destination,
 Min, Max, and Invert. This preserves the host's built-in parameter chunk state.
-The DSP modulation core recognizes host Controller 1-8 sources, but this V0.3
-plugin constructor does not expose host-automatable Controller 1-8 values and
-the unit Source choices remain Off/Internal LFO/Envelope. Therefore no separate
-CONTROLLERS page is included yet.
+The CTRL SRC page exposes all eight global host-automatable Controller values.
+They can drive per-unit modulation sources. They are host parameters, not MIDI
+CC assignments.
 
 The official SDK limits a page to 16 controls. Its generator now accepts an
 optional `backgroundImage` filename in `ui.json`; it places that image in both
@@ -34,7 +33,11 @@ python3 tools/build.py plugins/TROLLfxESPLabV03 --target all --toolchain zig --z
 ```
 
 Native, ARM32/Cortex-A17, and ARM64 builds succeeded. SDK validation reported
-0 errors and 0 warnings; all 9 TUI tabs, 9 Q-Link maps, 138 parameter handles,
+0 errors and 0 warnings; all 10 TUI tabs, 10 Q-Link maps, 146 parameter handles,
 and the background image passed validation. SDK output notes that Force
 navigation beyond six function keys is untested. Actual screen fit and image
 rendering require hardware review; no hardware deployment was performed.
+
+Installable package: `plugins/TROLLfxESPLabV03/dist/esp-lab-v0-3-0.3.0-mpc.zip`
+
+Package SHA-256: `ad86f30ad85bf0fa5d37bc241a1f96d57306c73de05e5dbc316d4fd4a3b8b0a6`.
