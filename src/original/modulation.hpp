@@ -11,7 +11,7 @@ namespace trollfx {
 // An algorithm only acts on destinations that it actually consumes.
 enum class ModDestination : unsigned char {
     Time, Feedback, Mix, Rate, Depth, Diffusion, Damping, Width,
-    Threshold, Ratio, Attack, Release, Cutoff, Count
+    Threshold, Ratio, Attack, Release, Cutoff, Decay, Output, Count
 };
 enum class ModSource : unsigned char {
     Off, HostController1, HostController2, HostController3, HostController4,
