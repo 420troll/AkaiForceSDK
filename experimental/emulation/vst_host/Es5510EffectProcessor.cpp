@@ -163,7 +163,6 @@ bool Es5510EffectProcessor::prepare(double sampleRate,
     if (!delayEngine_.prepare() || !chorusEngine_.prepare()) return false;
     sampleRateInteger_ = integerRate;
     capacitySamples_ = capacity;
-    Parameters defaults{};
     if (!delayEngine_.loadProgram(kStereoDelayProgram.data(), kProgramDelayWords) ||
         !chorusEngine_.loadProgram(kStereoChorusProgram.data(), kProgramChorusWords)) {
         return false;
