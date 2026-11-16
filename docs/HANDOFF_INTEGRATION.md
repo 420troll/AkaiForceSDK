@@ -1,4 +1,4 @@
-# Stage 002 integration milestone
+# TROLLfx ESP Lab V0.2 integration handoff
 
 V0.2 is a separate plugin identity (`Tfx2`); V0.1 project and package are not
 modified. Four stereo `EffectsUnit` instances share the `AudioEngine` interface
@@ -12,6 +12,13 @@ snapshot: native, ARM32/Cortex-A17 and ARM64 builds; 0 validator errors and
 warnings; host simulator 20 passed, 0 failed. This does not establish Force
 hardware UI fit or audio performance. Four-unit routing is functional software
 routing, not a recreation of DP/4 factory topology.
+
+Final plugin source: `plugins/TROLLfxESPLabV02/`. ARMv7 binary:
+`plugins/TROLLfxESPLabV02/build/TROLLfx - VST - ESP Lab V0.2/VST/esp-lab-v02-arm32.so`.
+Install package: `plugins/TROLLfxESPLabV02/dist/esp-lab-v0-2-0.2.0-mpc.zip`
+(SHA-256 `440e7a360cc72c4078b06adb3900645b8dc0e297bcaa1b8eec6c0c1189eb2961`).
+Extract the ZIP and copy `TROLLfx - VST - ESP Lab V0.2` into the Force drive's
+root `VST2 Plugins` folder. V0.1 remains available under its separate identity.
 
 The effects use an original four-line feedback delay network informed by
 published reverb controls/structures. No factory code is used and no original
