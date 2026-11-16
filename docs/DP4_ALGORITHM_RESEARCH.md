@@ -60,7 +60,7 @@ The v1.02 Appendix lists **44 single-unit entries** (including No Effect), **two
 33. FastPitchShift
 **2U:** Pitch Shift 2U
 
-### Dynamics, filtering, signal generation — 12 single-unit (including bypass)
+### Dynamics, filtering, signal generation — 11 single-unit (including bypass)
 34. EQ-Compressor
 35. Expander
 36. Keyed Expander
