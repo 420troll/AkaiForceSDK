@@ -15,21 +15,24 @@ per-frame ES5510 execution schedule.
 
 | Rate | Span | Frames | Program | Instructions/frame | Median µs/frame | Median elapsed |
 |---:|---:|---:|---|---:|---:|---:|
-| 44.1 kHz | short | 256 | original stereo swap | 3 | 0.0906 | 0.000023 s |
-| 44.1 kHz | short | 256 | MAME pump sum/delay fixture | 13 | 0.5012 | 0.000128 s |
-| 44.1 kHz | short | 256 | 160-word no-op ceiling | 160 | 4.3219 | 0.001106 s |
-| 44.1 kHz | long | 44,100 | original stereo swap | 3 | 0.0980 | 0.004324 s |
-| 44.1 kHz | long | 44,100 | MAME pump sum/delay fixture | 13 | 0.4970 | 0.021919 s |
-| 44.1 kHz | long | 44,100 | 160-word no-op ceiling | 160 | 4.5389 | 0.200165 s |
-| 48 kHz | short | 256 | original stereo swap | 3 | 0.0875 | 0.000022 s |
-| 48 kHz | short | 256 | MAME pump sum/delay fixture | 13 | 0.4324 | 0.000111 s |
-| 48 kHz | short | 256 | 160-word no-op ceiling | 160 | 3.8707 | 0.000991 s |
-| 48 kHz | long | 48,000 | original stereo swap | 3 | 0.0875 | 0.004202 s |
-| 48 kHz | long | 48,000 | MAME pump sum/delay fixture | 13 | 0.5152 | 0.024729 s |
-| 48 kHz | long | 48,000 | 160-word no-op ceiling | 160 | 4.8079 | 0.230779 s |
+| 44.1 kHz | short_256 | 256 | original stereo swap | 3 | 0.0859 | 0.000022 s |
+| 44.1 kHz | short_256 | 256 | MAME pump delay fixture (MEMSIZ initialized) | 13 | 0.4535 | 0.000116 s |
+| 44.1 kHz | short_256 | 256 | 160-word no-op ceiling | 160 | 4.4852 | 0.001148 s |
+| 44.1 kHz | long_1sec | 44,100 | original stereo swap | 3 | 0.1147 | 0.005058 s |
+| 44.1 kHz | long_1sec | 44,100 | MAME pump delay fixture (MEMSIZ initialized) | 13 | 0.5873 | 0.025898 s |
+| 44.1 kHz | long_1sec | 44,100 | 160-word no-op ceiling | 160 | 5.2903 | 0.233302 s |
+| 48 kHz | short_256 | 256 | original stereo swap | 3 | 0.0895 | 0.000023 s |
+| 48 kHz | short_256 | 256 | MAME pump delay fixture (MEMSIZ initialized) | 13 | 0.4840 | 0.000124 s |
+| 48 kHz | short_256 | 256 | 160-word no-op ceiling | 160 | 4.3274 | 0.001108 s |
+| 48 kHz | long_1sec | 48,000 | original stereo swap | 3 | 0.0944 | 0.004532 s |
+| 48 kHz | long_1sec | 48,000 | MAME pump delay fixture (MEMSIZ initialized) | 13 | 0.5635 | 0.027050 s |
+| 48 kHz | long_1sec | 48,000 | 160-word no-op ceiling | 160 | 5.1989 | 0.249548 s |
 
-The pump test program produces audio and touches delay RAM, but is not a delay
-effect. Its timing cannot predict the delay/chorus microprogram cost. Program
+The pump fixture benchmark uses the corrected `gpr 244 0xff` MEMSIZ initialization;
+the prior zero-init delay-RAM results are invalid and excluded. This public MAME
+test program performs its fixed 7,440-frame summed delay. It is a useful delay-RAM
+execution profile but not the adjustable stereo delay or chorus program requested
+for Phase 2. Its timing cannot predict those program costs. Program
 and native CSV data are retained in `NATIVE_BENCH_MATRIX.csv`.
 
 ## ARMv7 build
