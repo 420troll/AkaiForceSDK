@@ -6,7 +6,7 @@
 - Release: `ES5510 Expanded V0.2`, stereo VST2, UID `TfxV`.
 - V0.1 remains UID `TfxX`, in its existing project/package. This release has its
   own plugin folder and package. No hardware installation was performed.
-- Release commit: recorded below after integration/push.
+- Release implementation commit: `c8b3eb90f82330c2734cfa25ed9038f5ce311808`.
 - Package: `artifacts/es5510-emulation/v02/trollfx-es5510-expanded-v0.2-akai-force-armv7.zip`
 - SHA-256: `e409b080817256a17867734feb8b1593c4e6c6d500bceb5edf66d5c5ac14e29e`
 
@@ -147,7 +147,7 @@ g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Werror -Iexperimental/emulation \
 - EPS/Waveboy research and capture inspector: `5e0724b`
 - ES5510 phaser: `f24be58`
 - ES5510 rotary: `c88eb05`
-- V0.2 integration/release commit: to be filled after commit.
+- V0.2 integration/release commit: `c8b3eb90f82330c2734cfa25ed9038f5ce311808`.
 
 No proprietary ROM, firmware, or commercial effect program is included. MAME
 BSD-3-Clause attribution and conditions are included in the package.
