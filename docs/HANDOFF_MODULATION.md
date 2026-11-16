@@ -9,7 +9,8 @@ directly to 0..99-style parameter travel: active modulation replaces that
 destination's base value; disabled or Off leaves host automation unchanged.
 If both slots select the same destination, slot 2 wins. `beginBlock()` receives
 sample rate and unit LFO rate; `process()` is called per sample with stereo
-input, normalized base values and a normalized output array.
+input, normalized base values and a normalized output array. The V0.3 wrapper
+evaluates it in fixed 8-sample segments to balance control rate and CPU cost.
 
 Controller 1..8 are global normalized host-automatable plugin parameters,
 proposed stable identifiers `controller1`..`controller8` and display labels
@@ -28,6 +29,7 @@ g++ -std=c++17 -Wall -Wextra -Wpedantic -Werror -O2 \
 
 Result: PASS. Confirms audible LFO variation, output bounds, inversion,
 envelope response, changing Host Controller 3 input, Off/disabled base
-pass-through and exact display 0..99 round-trip. Plugin integration is
-separate; this header does not claim
-touchscreen/Force behavior until its schema and host test are integrated.
+pass-through and exact display 0..99 round-trip. V0.3 maps modulation to live
+DSP, including actual reverb decay/output; an impulse-tail modulation test
+passes. MIDI CC is not used, and Force touchscreen navigation remains
+unverified.

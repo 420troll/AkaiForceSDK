@@ -1,6 +1,6 @@
 # ESP Lab V0.3 touchscreen skin
 
-Base: V0.3 plugin commit `11984a4` (138 parameters, stable per-unit state).
+Base: V0.3 plugin identity `Tfx3`; final integrated source is on `main`.
 
 The V0.3 skin uses a warm amber control accent, cream labels, and a charcoal
 fallback background. It adds the generated abstract brushed-metal panel
@@ -40,4 +40,4 @@ rendering require hardware review; no hardware deployment was performed.
 
 Installable package: `plugins/TROLLfxESPLabV03/dist/esp-lab-v0-3-0.3.0-mpc.zip`
 
-Package SHA-256: `ad86f30ad85bf0fa5d37bc241a1f96d57306c73de05e5dbc316d4fd4a3b8b0a6`.
+Package SHA-256 after integrated-main rebuild: `aaee7c24a49a3fc9512ded6336db5cb548bdfb75092ea0b3d21cb44d602ed46e`.
