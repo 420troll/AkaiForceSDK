@@ -2,6 +2,8 @@
 
 Date: 2026-11-16 UTC
 
+Stage 002 source and package commit: `ff550e10cf03500beaf102571809bd297545bc11`.
+
 ## Build status
 
 - DSP core from `77f4c1e7d2df4310e3a2cb62f322b5c623859ae6` integrated in the
