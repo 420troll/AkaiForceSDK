@@ -1,0 +1,16 @@
+{
+  "name": "ES5510 Experimental",
+  "manufacturer": "TROLLfx",
+  "version": "0.1.0",
+  "format": "vst2",
+  "kind": "effect",
+  "uid": "TfxX",
+  "numInputs": 2,
+  "numOutputs": 2,
+  "category": "Effect",
+  "file32": "VST/es5510-experimental-arm32.so",
+  "file64": "VST/es5510-experimental-arm64.so",
+  "description": "Experimental stereo delay and chorus executing original TROLLfx ES5510 microprograms.",
+  "author": "TROLLfx",
+  "license": "BSD-3-Clause (MAME-derived ES5510 core)"
+}
