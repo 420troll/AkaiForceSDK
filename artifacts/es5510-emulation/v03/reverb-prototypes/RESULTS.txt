@@ -1,0 +1,19 @@
+TROLLfx original ES5510 reverb prototypes — strict native results
+==================================================================
+
+Build: g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Werror
+Input: 44.1 kHz stereo impulse at 0.75 full-scale; hot-beat fixture uses
+0.95 full scale every 80 ms with periodic stronger hits. Output is ES5510
+16-bit stereo. No hardware tests.
+
+The plate presets have different instruction structures and measured first
+output timing. Non Lin-named files are transitional diffuser/feedback sketches
+only; they do not have the required nine-level output envelope and are excluded
+from the V0.3 ready descriptor catalog.
+
+nonlin1_transient words=31 impulse_peak=24576 early_rms=381.212 tail_rms=0.039766 beat_peak=31129 beat_clips=0 stereo_corr=0 first_ms=7.18821/9.79592
+nonlin2_bloom words=61 impulse_peak=15874 early_rms=471.603 tail_rms=86.4058 beat_peak=20107 beat_clips=0 stereo_corr=0.384255 first_ms=42.5624/53.22
+nonlin3_drum words=36 impulse_peak=16383 early_rms=364.793 tail_rms=0.170402 beat_peak=16383 beat_clips=0 stereo_corr=1 first_ms=11.542/11.542
+small_plate words=41 impulse_peak=22225 early_rms=479.122 tail_rms=36.3984 beat_peak=28151 beat_clips=0 stereo_corr=0.316177 first_ms=29.5011/33.9909
+large_plate words=51 impulse_peak=18271 early_rms=370.066 tail_rms=121.615 beat_peak=23143 beat_clips=0 stereo_corr=0.402038 first_ms=63.5147/71.7234
+PASS all five ES5510 reverb prototypes, impulse and hot-beat stability
