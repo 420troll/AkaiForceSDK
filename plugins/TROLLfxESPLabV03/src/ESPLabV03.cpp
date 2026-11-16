@@ -13,7 +13,7 @@ constexpr trollfx::EffectAlgorithm algorithm(int x) { return static_cast<trollfx
 }
 
 class ESPLabV03 final : public mpc::Plugin {
-    static constexpr int N=4, PER=34, BASE=2;
+    static constexpr int N=4, PER=34, BASE=10;
     enum Global { kRoute=0,kActive=1 };
     enum Unit { kAlgo=0,kTime,kFeedback,kRate,kDepth,kDecay,kPredelay,kDamping,kDiffusion,kWidth,kCutoff,kDrive,kRatio,kThreshold,kAttack,kRelease,kBypass,kMix,kEarlyTime1,kEarlyLevel1,kEarlyTime2,kEarlyLevel2,kM1Enabled,kM1Source,kM1Dest,kM1Min,kM1Max,kM1Invert,kM2Enabled,kM2Source,kM2Dest,kM2Min,kM2Max,kM2Invert };
     static int ix(int u,int p){ return BASE+u*PER+p; }
@@ -25,6 +25,7 @@ public:
         using namespace mpc;
         addParam(choiceParam("routing","Routing",{"Serial","Parallel","Dual","AB Feedback 1","AB Feedback 2"},0));
         addParam(intParam("active","Active Unit",0,3,0));
+        for(int i=0;i<8;++i) addParam(floatParam(("controller"+std::to_string(i+1)).c_str(),("Controller "+std::to_string(i+1)).c_str(),0,100,0,"%",0));
         for(int u=0;u<N;++u){ const char c=char('A'+u); const std::string s(1,c);
             addParam(choiceParam(("algo"+s).c_str(),("Unit "+s+" Algorithm").c_str(),{"Delay","Chorus","Flanger","Room","Hall","Plate","Mod Reverb","VCF Distortion","EQ Panner DDL","Compressor"},1));
             addParam(logParam(("time"+s).c_str(),("Unit "+s+" Time").c_str(),0.1f,10000,350,"ms",0));
@@ -50,7 +51,7 @@ public:
             addParam(floatParam(("early2level"+s).c_str(),("Unit "+s+" Early Level 2").c_str(),0,100,15,"%",0));
             for(int slot=0;slot<2;++slot){ const std::string z=std::to_string(slot+1)+s; const int en=slot?kM2Enabled:kM1Enabled, so=slot?kM2Source:kM1Source, de=slot?kM2Dest:kM1Dest, mi=slot?kM2Min:kM1Min, ma=slot?kM2Max:kM1Max, iv=slot?kM2Invert:kM1Invert; (void)en;(void)so;(void)de;(void)mi;(void)ma;(void)iv;
                 addParam(boolParam(("mod"+z+"en").c_str(),("Unit "+s+" Mod"+std::to_string(slot+1)+" Enabled").c_str(),false));
-                addParam(choiceParam(("mod"+z+"src").c_str(),("Unit "+s+" Mod"+std::to_string(slot+1)+" Source").c_str(),{"Off","Internal LFO","Envelope"},0));
+                addParam(choiceParam(("mod"+z+"src").c_str(),("Unit "+s+" Mod"+std::to_string(slot+1)+" Source").c_str(),{"Off","Controller 1","Controller 2","Controller 3","Controller 4","Controller 5","Controller 6","Controller 7","Controller 8","Internal LFO","Envelope"},0));
                 addParam(choiceParam(("mod"+z+"dst").c_str(),("Unit "+s+" Mod"+std::to_string(slot+1)+" Destination").c_str(),{"Time","Feedback","Mix","Rate","Depth","Diffusion","Damping","Width","Threshold","Ratio","Attack","Release","Cutoff","Decay","Output"},2));
                 addParam(floatParam(("mod"+z+"min").c_str(),("Unit "+s+" Mod"+std::to_string(slot+1)+" Min").c_str(),0,100,0,"%",0));
                 addParam(floatParam(("mod"+z+"max").c_str(),("Unit "+s+" Mod"+std::to_string(slot+1)+" Max").c_str(),0,100,100,"%",0));
@@ -64,8 +65,9 @@ public:
         const float* l=c.inputs[0]; const float* r=c.numInputs>1?c.inputs[1]:c.inputs[0];
         float* ol=c.outputs[0]; float* or_=c.numOutputs>1?c.outputs[1]:c.outputs[0];
         const std::size_t n=std::min<std::size_t>(std::size_t(c.numFrames),buffers_[0].size());
+        std::array<float,8> controllerValues{}; for(int i=0;i<8;++i) controllerValues[static_cast<std::size_t>(i)]=get(2+i)*.01f;
         for(int u=0;u<N;++u){
-            for(int slot=0;slot<2;++slot){const int b=slot?kM2Enabled:kM1Enabled; trollfx::ModulatorSlot m; m.enabled=getBool(ix(u,b)); m.source=static_cast<trollfx::ModSource>(std::clamp(getInt(ix(u,b+1)),0,2)); m.destination=static_cast<trollfx::ModDestination>(std::clamp(getInt(ix(u,b+2)),0,14)); m.minNorm=get(ix(u,b+3))*.01f; m.maxNorm=get(ix(u,b+4))*.01f; m.invert=getBool(ix(u,b+5)); modulators_[u].setSlot(static_cast<std::size_t>(slot),m); }
+            for(int slot=0;slot<2;++slot){const int b=slot?kM2Enabled:kM1Enabled; trollfx::ModulatorSlot m; m.enabled=getBool(ix(u,b)); m.source=static_cast<trollfx::ModSource>(std::clamp(getInt(ix(u,b+1)),0,10)); m.destination=static_cast<trollfx::ModDestination>(std::clamp(getInt(ix(u,b+2)),0,14)); m.minNorm=get(ix(u,b+3))*.01f; m.maxNorm=get(ix(u,b+4))*.01f; m.invert=getBool(ix(u,b+5)); modulators_[u].setSlot(static_cast<std::size_t>(slot),m); }
             modulators_[u].beginBlock(static_cast<float>(c.sampleRate),get(ix(u,kRate)));
         }
         const int route=getInt(kRoute);
@@ -84,7 +86,7 @@ public:
                 const auto rk=ai==3?trollfx::ReverbKind::Room:ai==4?trollfx::ReverbKind::Hall:ai==5?trollfx::ReverbKind::Plate:trollfx::ReverbKind::Modulated;
                 std::size_t off=0;
                 while(off<n){ const std::size_t count=std::min<std::size_t>(8,n-off);
-                    for(std::size_t j=0;j<count;++j) modulators_[u].process(srcL[off+j],srcR[off+j],base,out);
+                    for(std::size_t j=0;j<count;++j) modulators_[u].process(srcL[off+j],srcR[off+j],controllerValues,base,out);
                     trollfx::EffectParams p=baseP; p.timeMs=logDenorm(out[0],.1f,10000); p.feedback=(out[1]*1.84f)-.92f; p.mix=out[2]; p.rateHz=logDenorm(out[3],.01f,8); p.depthMs=out[4]*30; p.diffusion=out[5]; p.damping=out[6]*.98f; p.width=out[7]; p.thresholdDb=out[8]*96-96; p.ratio=1+out[9]*39; p.attackMs=logDenorm(out[10],.05f,100); p.releaseMs=logDenorm(out[11],1,10000); p.cutoffHz=logDenorm(out[12],80,10000); engines_[u].setParams(p);
                     trollfx::ReverbParams rp; rp.decaySeconds=logDenorm(out[13],.2f,60); rp.outputDb=out[14]*36.0f-24.0f; rp.preDelayMs=get(ix(u,kPredelay)); rp.damping=p.damping; rp.diffusion=p.diffusion; rp.width=p.width; rp.mix=p.mix; rp.earlyTime1Ms=get(ix(u,kEarlyTime1)); rp.earlyLevel1=get(ix(u,kEarlyLevel1))*.01f; rp.earlyTime2Ms=get(ix(u,kEarlyTime2)); rp.earlyLevel2=get(ix(u,kEarlyLevel2))*.01f; rp.modRateHz=p.rateHz; rp.modDepthMs=std::min(2.0f,p.depthMs*.1f); reverbs_[u].setKind(rk); reverbs_[u].setParams(rp);
                     if(ai>=3&&ai<=6) reverbs_[u].process(srcL+off,srcR+off,dstL+off,dstR+off,count); else engines_[u].process(srcL+off,srcR+off,dstL+off,dstR+off,count);
