@@ -36,14 +36,29 @@ public:
         float* ol=c.outputs[0]; float* or_=c.numOutputs>1?c.outputs[1]:c.outputs[0];
         const std::size_t n=std::min<std::size_t>(std::size_t(c.numFrames),buffers_[0].size());
         for(int u=0;u<N;++u){ const int a=ix(u,kAlgo); trollfx::EffectParams p; p.timeMs=get(ix(u,kTime)); p.depthMs=get(ix(u,kDepth)); p.rateHz=get(ix(u,kRate)); p.feedback=get(ix(u,kFeedback))*0.01f; p.mix=get(ix(u,kMix))*0.01f; p.diffusion=.65f; p.damping=.35f; engines_[u].setAlgorithm(algorithm(std::min(getInt(a),6))); engines_[u].setParams(p); }
-        int route=getInt(kRoute); const float* inL=l; const float* inR=r;
-        std::array<float*,2> prev{buffers_[0].data(),buffers_[1].data()};
-        std::array<float*,2> next{buffers_[2].data(),buffers_[3].data()};
-        if(route==0){ for(int u=0;u<N;++u){ engines_[u].process(inL,inR,next[0],next[1],n); if(!getBool(ix(u,kBypass))){ std::swap(prev,next); inL=prev[0]; inR=prev[1]; } } }
-        else if(route==1){ std::fill_n(prev[0],n,0); std::fill_n(prev[1],n,0); for(int u=0;u<N;++u){ engines_[u].process(l,r,next[0],next[1],n); if(!getBool(ix(u,kBypass))) for(std::size_t i=0;i<n;++i){prev[0][i]+=next[0][i]*0.25f;prev[1][i]+=next[1][i]*0.25f;} } }
-        else { engines_[0].process(l,l,next[0],next[1],n); engines_[1].process(next[0],next[1],prev[0],prev[1],n); engines_[2].process(r,r,next[0],next[1],n); engines_[3].process(next[0],next[1],prev[0],prev[1],n); }
-        for(std::size_t i=0;i<n;++i){ const float wetL=route==2?0.5f*(prev[0][i]+prev[1][i]):prev[0][i]; const float wetR=route==2?wetL:prev[1][i]; ol[i]=l[i]+(wetL-l[i])*0.5f; or_[i]=r[i]+(wetR-r[i])*0.5f; }
+        const int route=getInt(kRoute);
+        float* aL=buffers_[0].data(); float* aR=buffers_[1].data();
+        float* bL=buffers_[2].data(); float* bR=buffers_[3].data();
+        float* cL=buffers_[4].data(); float* cR=buffers_[5].data();
+        float* dL=buffers_[6].data(); float* dR=buffers_[7].data();
+        auto runUnit=[&](int u,const float* srcL,const float* srcR,float* dstL,float* dstR) {
+            if(getBool(ix(u,kBypass))) { for(std::size_t i=0;i<n;++i){dstL[i]=srcL[i];dstR[i]=srcR[i];} }
+            else engines_[u].process(srcL,srcR,dstL,dstR,n);
+        };
+        if(route==0) { // four units in series
+            const float* srcL=l; const float* srcR=r;
+            for(int u=0;u<N;++u){ float* dstL=(u&1)?bL:aL; float* dstR=(u&1)?bR:aR; runUnit(u,srcL,srcR,dstL,dstR); srcL=dstL; srcR=dstR; }
+            for(std::size_t i=0;i<n;++i){ol[i]=srcL[i];or_[i]=srcR[i];}
+        } else if(route==1) { // four parallel stereo paths, equal-power average
+            std::fill_n(aL,n,0.0f); std::fill_n(aR,n,0.0f);
+            for(int u=0;u<N;++u){ runUnit(u,l,r,cL,cR); for(std::size_t i=0;i<n;++i){aL[i]+=cL[i]*0.25f;aR[i]+=cR[i]*0.25f;} }
+            for(std::size_t i=0;i<n;++i){ol[i]=aL[i];or_[i]=aR[i];}
+        } else { // dual stereo chains A->B and C->D, averaged at the output
+            runUnit(0,l,r,bL,bR); runUnit(1,bL,bR,aL,aR);
+            runUnit(2,l,r,dL,dR); runUnit(3,dL,dR,cL,cR);
+            for(std::size_t i=0;i<n;++i){ol[i]=0.5f*(aL[i]+cL[i]);or_[i]=0.5f*(aR[i]+cR[i]);}
+        }
     }
-private: std::array<trollfx::EffectsUnit,N> engines_; std::array<std::vector<float>,4> buffers_;
+private: std::array<trollfx::EffectsUnit,N> engines_; std::array<std::vector<float>,8> buffers_;
 };
 MPC_PLUGIN_ENTRY(ESPLabV02)

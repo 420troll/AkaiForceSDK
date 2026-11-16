@@ -16,7 +16,7 @@ routing, not a recreation of DP/4 factory topology.
 Final plugin source: `plugins/TROLLfxESPLabV02/`. ARMv7 binary:
 `plugins/TROLLfxESPLabV02/build/TROLLfx - VST - ESP Lab V0.2/VST/esp-lab-v02-arm32.so`.
 Install package: `plugins/TROLLfxESPLabV02/dist/esp-lab-v0-2-0.2.0-mpc.zip`
-(SHA-256 `440e7a360cc72c4078b06adb3900645b8dc0e297bcaa1b8eec6c0c1189eb2961`).
+(SHA-256 `4020e995d604a5a0fde3c3f6f31ca027e018e53384385040fe07076d8f3d8919`).
 Extract the ZIP and copy `TROLLfx - VST - ESP Lab V0.2` into the Force drive's
 root `VST2 Plugins` folder. V0.1 remains available under its separate identity.
 
