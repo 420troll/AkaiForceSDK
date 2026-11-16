@@ -1,11 +1,5 @@
 {
-  "kit": {"theme":"amber","accent":"ffdb8b3d"},
-  "style": {
-    "background":"ff17191b",
-    "accent":"ffdb8b3d",
-    "text":"fff3ead8",
-    "muted":"ff85847f"
-  },
+  "kit": "cyan",
   "pages": [
     {"name":"ROUTING","controls":[
       {"param":"Routing","widget":"slider","overlay":"menu"},
@@ -22,10 +16,9 @@
       {"param":"Unit D Algorithm","widget":"slider","overlay":"menu"},
       {"param":"Unit D Bypass","widget":"switch"},
       {"param":"Unit D Mix","widget":"fader"}]},
-    {"name":"UNIT A","controls":[{"widget":"text","text":"UNIT A / ACTIVE PATH SLOT 1"},{"param":"Unit A Algorithm","widget":"slider","overlay":"menu"},{"param":"Unit A Time","widget":"knob"},{"param":"Unit A Depth","widget":"knob"},{"param":"Unit A Rate","widget":"knob"},{"param":"Unit A Feedback","widget":"knob"},{"param":"Unit A Bypass","widget":"switch"},{"param":"Unit A Mix","widget":"fader"}]},
-    {"name":"UNIT B","controls":[{"widget":"text","text":"UNIT B / ACTIVE PATH SLOT 2"},{"param":"Unit B Algorithm","widget":"slider","overlay":"menu"},{"param":"Unit B Time","widget":"knob"},{"param":"Unit B Depth","widget":"knob"},{"param":"Unit B Rate","widget":"knob"},{"param":"Unit B Feedback","widget":"knob"},{"param":"Unit B Bypass","widget":"switch"},{"param":"Unit B Mix","widget":"fader"}]},
-    {"name":"UNIT C","controls":[{"widget":"text","text":"UNIT C / ACTIVE PATH SLOT 3"},{"param":"Unit C Algorithm","widget":"slider","overlay":"menu"},{"param":"Unit C Time","widget":"knob"},{"param":"Unit C Depth","widget":"knob"},{"param":"Unit C Rate","widget":"knob"},{"param":"Unit C Feedback","widget":"knob"},{"param":"Unit C Bypass","widget":"switch"},{"param":"Unit C Mix","widget":"fader"}]},
-    {"name":"UNIT D","controls":[{"widget":"text","text":"UNIT D / ACTIVE PATH SLOT 4"},{"param":"Unit D Algorithm","widget":"slider","overlay":"menu"},{"param":"Unit D Time","widget":"knob"},{"param":"Unit D Depth","widget":"knob"},{"param":"Unit D Rate","widget":"knob"},{"param":"Unit D Feedback","widget":"knob"},{"param":"Unit D Bypass","widget":"switch"},{"param":"Unit D Mix","widget":"fader"}]},
-    {"name":"MODULATE","controls":[{"widget":"text","text":"MODULATION / RATE + DEPTH"},{"param":"Unit A Rate","widget":"knob"},{"param":"Unit A Depth","widget":"knob"},{"param":"Unit B Rate","widget":"knob"},{"param":"Unit B Depth","widget":"knob"},{"param":"Unit C Rate","widget":"knob"},{"param":"Unit C Depth","widget":"knob"},{"param":"Unit D Rate","widget":"knob"},{"param":"Unit D Depth","widget":"knob"}]}
+    {"name":"UNIT A","controls":[{"param":"Unit A Algorithm","widget":"slider","overlay":"menu"},{"param":"Unit A Time","widget":"knob"},{"param":"Unit A Depth","widget":"knob"},{"param":"Unit A Rate","widget":"knob"},{"param":"Unit A Feedback","widget":"knob"},{"param":"Unit A Bypass","widget":"switch"},{"param":"Unit A Mix","widget":"fader"}]},
+    {"name":"UNIT B","controls":[{"param":"Unit B Algorithm","widget":"slider","overlay":"menu"},{"param":"Unit B Time","widget":"knob"},{"param":"Unit B Depth","widget":"knob"},{"param":"Unit B Rate","widget":"knob"},{"param":"Unit B Feedback","widget":"knob"},{"param":"Unit B Bypass","widget":"switch"},{"param":"Unit B Mix","widget":"fader"}]},
+    {"name":"UNIT C","controls":[{"param":"Unit C Algorithm","widget":"slider","overlay":"menu"},{"param":"Unit C Time","widget":"knob"},{"param":"Unit C Depth","widget":"knob"},{"param":"Unit C Rate","widget":"knob"},{"param":"Unit C Feedback","widget":"knob"},{"param":"Unit C Bypass","widget":"switch"},{"param":"Unit C Mix","widget":"fader"}]},
+    {"name":"UNIT D","controls":[{"param":"Unit D Algorithm","widget":"slider","overlay":"menu"},{"param":"Unit D Time","widget":"knob"},{"param":"Unit D Depth","widget":"knob"},{"param":"Unit D Rate","widget":"knob"},{"param":"Unit D Feedback","widget":"knob"},{"param":"Unit D Bypass","widget":"switch"},{"param":"Unit D Mix","widget":"fader"}]}
   ]
 }
