@@ -1,6 +1,6 @@
 # TROLLfx ESP Lab V0.2 integration handoff
 
-Final routing-fix source milestone: `6b44d68` (pushed to `main`). Native,
+Final DP/4-informed source milestone: `87e8080` (pushed to `main`). Native,
 ARMv7 and ARM64 SDK build succeeded; validator reported 0 errors and 0
 warnings. Host simulation passed 20/20 after the routing correction. The
 ARMv7 library is `VST/esp-lab-v02-arm32.so` in the output folder above; package
@@ -22,7 +22,7 @@ routing, not a recreation of DP/4 factory topology.
 Final plugin source: `plugins/TROLLfxESPLabV02/`. ARMv7 binary:
 `plugins/TROLLfxESPLabV02/build/TROLLfx - VST - ESP Lab V0.2/VST/esp-lab-v02-arm32.so`.
 Install package: `plugins/TROLLfxESPLabV02/dist/esp-lab-v0-2-0.2.0-mpc.zip`
-(SHA-256 `4020e995d604a5a0fde3c3f6f31ca027e018e53384385040fe07076d8f3d8919`).
+(SHA-256 `f979db5a919f15fe2474a026670e2765b556e38d706275094d2aa6c79bedcd6f`).
 Extract the ZIP and copy `TROLLfx - VST - ESP Lab V0.2` into the Force drive's
 root `VST2 Plugins` folder. V0.1 remains available under its separate identity.
 
