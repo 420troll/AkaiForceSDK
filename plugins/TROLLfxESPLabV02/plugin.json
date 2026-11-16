@@ -1,0 +1,15 @@
+{
+  "name": "ESP Lab V0.2",
+  "manufacturer": "TROLLfx",
+  "version": "0.2.0",
+  "format": "vst2",
+  "kind": "effect",
+  "uid": "Tfx2",
+  "numInputs": 2,
+  "numOutputs": 2,
+  "category": "Effect",
+  "file32": "VST/esp-lab-v02-arm32.so",
+  "file64": "VST/esp-lab-v02-arm64.so",
+  "description": "Four independently controlled stereo Ensoniq-inspired effects units with serial, parallel, and dual routing.",
+  "license": "MIT"
+}
