@@ -13,7 +13,11 @@ enum class ModDestination : unsigned char {
     Time, Feedback, Mix, Rate, Depth, Diffusion, Damping, Width,
     Threshold, Ratio, Attack, Release, Cutoff, Count
 };
-enum class ModSource : unsigned char { Off, InternalLfo, Envelope };
+enum class ModSource : unsigned char {
+    Off, HostController1, HostController2, HostController3, HostController4,
+    HostController5, HostController6, HostController7, HostController8,
+    InternalLfo, Envelope
+};
 
 struct ModulatorSlot {
     bool enabled = false;
@@ -24,12 +28,11 @@ struct ModulatorSlot {
     bool invert = false;
 };
 
-// Two independently assignable modulators per unit. DP/4 exposes two
-// controller assignments with destination travel endpoints; these internal
-// LFO/envelope sources are TROLLfx extensions, not the original Controller
-// 1..8 assignments or MIDI CC. Set host-automated base parameters every sample
-// (or block); when a route is active its endpoint mapping overrides that base
-// for the assigned destination. Duplicate destinations use slot 2.
+// Two independently assignable modulators per unit. Controller 1..8 values
+// are eight global host-automatable normalized parameters, not MIDI CC.
+// Internal LFO/envelope sources are TROLLfx additions. When a route is active
+// its endpoint mapping overrides base for the assigned destination. Duplicate
+// destinations use slot 2.
 class ModulationMatrix final {
 public:
     static constexpr std::size_t kParamCount = static_cast<std::size_t>(ModDestination::Count);
@@ -56,6 +59,11 @@ public:
     // Call once per audio sample. input drives the envelope detector. Base and
     // output use normalized 0..1 control values; this routine allocates none.
     void process(float inputL, float inputR, const Values& base, Values& output) noexcept {
+        const std::array<float, 8> noControllers{};
+        process(inputL, inputR, noControllers, base, output);
+    }
+    void process(float inputL, float inputR, const std::array<float, 8>& controllers,
+                 const Values& base, Values& output) noexcept {
         output = base;
         const float level = clamp01(std::max(std::fabs(inputL), std::fabs(inputR)));
         const float coeff = level > envelope_ ? attackCoeff_ : releaseCoeff_;
@@ -65,7 +73,13 @@ public:
         if (phase_ >= 6.28318530718f) phase_ -= 6.28318530718f;
         for (const auto& s : slots_) {
             if (!s.enabled || s.source == ModSource::Off) continue;
-            float value = s.source == ModSource::InternalLfo ? lfo : clamp01(envelope_);
+            float value = 0.0f;
+            const unsigned source = static_cast<unsigned>(s.source);
+            if (source >= static_cast<unsigned>(ModSource::HostController1) &&
+                source <= static_cast<unsigned>(ModSource::HostController8)) {
+                value = clamp01(controllers[source - static_cast<unsigned>(ModSource::HostController1)]);
+            } else if (s.source == ModSource::InternalLfo) value = lfo;
+            else value = clamp01(envelope_);
             if (s.invert) value = 1.0f - value;
             const float lo = std::min(s.minNorm, s.maxNorm);
             const float hi = std::max(s.minNorm, s.maxNorm);

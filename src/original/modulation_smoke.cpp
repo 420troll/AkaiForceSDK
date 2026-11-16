@@ -20,5 +20,8 @@ int main() {
     assert(out[static_cast<unsigned>(ModDestination::Feedback)]>.72f);
     s.enabled=false; m.setSlot(0,s); m.process(1,1,base,out); assert(out[static_cast<unsigned>(ModDestination::Feedback)]==base[1]);
     assert(ModulationMatrix::toDisplay99(ModulationMatrix::fromDisplay99(73))==73);
+    s.source=ModSource::HostController3; s.destination=ModDestination::Mix; s.minNorm=.1f; s.maxNorm=.9f; s.invert=false; s.enabled=true; m.setSlot(0,s);
+    std::array<float,8> controllers{}; controllers[2]=.9f; m.process(0,0,controllers,base,out); assert(out[2]>.8f);
+    controllers[2]=.1f; m.process(0,0,controllers,base,out); assert(out[2]<.2f);
     std::cout<<"modulation matrix: PASS (LFO audible, envelope, inversion, bounds, off, 0..99)\n";
 }
