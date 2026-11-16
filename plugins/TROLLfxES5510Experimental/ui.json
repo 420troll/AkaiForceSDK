@@ -31,7 +31,6 @@
         { "param": "Rate", "widget": "knob", "visibleWhen": { "param": "Mode", "choice": "CHORUS" } },
         { "param": "Depth", "widget": "knob", "visibleWhen": { "param": "Mode", "choice": "CHORUS" } },
         { "param": "Wet", "widget": "fader", "visibleWhen": { "param": "Mode", "choice": "CHORUS" } },
-        { "param": "Dry", "widget": "fader", "visibleWhen": { "param": "Mode", "choice": "CHORUS" } },
         { "widget": "empty" },
         { "widget": "empty" },
         { "widget": "empty" },

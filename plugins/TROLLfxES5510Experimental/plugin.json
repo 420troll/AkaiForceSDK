@@ -10,7 +10,7 @@
   "category": "Effect",
   "file32": "VST/es5510-experimental-arm32.so",
   "file64": "VST/es5510-experimental-arm64.so",
-  "description": "Experimental stereo delay and chorus executing original TROLLfx ES5510 microprograms.",
+  "description": "Standalone MAME-derived ES5510 execution with original TROLLfx stereo delay and chorus microprograms.",
   "author": "TROLLfx",
   "license": "BSD-3-Clause (MAME-derived ES5510 core)"
 }

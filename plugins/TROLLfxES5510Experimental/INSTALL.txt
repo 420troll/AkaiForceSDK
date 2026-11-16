@@ -1,0 +1,32 @@
+TROLLfx - VST - ES5510 Experimental V0.1
+
+Install on the original Akai Force (ARMv7)
+
+1. Copy this ZIP to the root of the Force SSD, mounted as /media/SSD250g.
+2. In the Force shell, inspect the SSD mount options before installing:
+
+   awk '$2=="/media/SSD250g" {print "SSD mount options: "$4}' /proc/mounts
+
+   If the output contains "noexec", stop. Do not change mount options as part
+   of this install; have the mount configuration reviewed first.
+3. The shell commands below use POSIX sh. They extract only files that do not
+   already exist, so an existing plugin directory or file is not overwritten.
+
+   ROOT='/media/SSD250g/VST2 Plugins'
+   ARCHIVE='/media/SSD250g/trollfx-es5510-experimental-v0.1-akai-force-armv7.zip'
+   PLUGIN="$ROOT/TROLLfx - VST - ES5510 Experimental"
+   if test -e "$PLUGIN"; then
+       echo "Plugin path already exists; stop and inspect it: $PLUGIN"
+       exit 1
+   fi
+   mkdir -p "$ROOT"
+   unzip -n "$ARCHIVE" -d "$ROOT"
+
+4. On the Force, enable both Enable Enhancements and External Plugin Support in Preferences >
+   Enhancements (Beta). Restart the Force to rescan external plugins. Confirm the
+   installed plugin appears as "ES5510 Experimental" by TROLLfx.
+
+The official SDK identifies the Force as a 32-bit target and documents MPC OS
+3.10.1 or later with External Plugin Support. This package contains the ARM32 VST2
+binary and an ARM64 binary for other supported Akai targets. No hardware
+installation or plugin scan was performed while preparing this package.
