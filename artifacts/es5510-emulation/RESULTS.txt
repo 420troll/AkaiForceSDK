@@ -79,21 +79,23 @@ algorithm accuracy evidence.
 
 ARMv7 test-kit package:
   ZIP artifacts/es5510-emulation/es5510-armv7-testkit.zip
-  SHA-256 4f29c52d73aa4ddc575525b7cdea9c896d0465d77a98d1c2c7650e6e367918ac
+  SHA-256 d67f135df77793da58264a0b4363d4bd320cc261d634daf3c8ba1e3cafae3739
   Contains stripped ARMv7 hard-float renderer and benchmark, both public test
   bundles, README and required third-party license notice. No Ensoniq content.
 
 MAME pump fixture test program:
   Bundle: experimental/emulation/programs/mame_pump_summed_delay_test.esp
-  SHA-256 aabfbaea148dbd9c1d4d8053e107629cc952d87ad4621f7372b4d70e0197a782
+  SHA-256 1d425c662693b8b6c001c39bb738627fa909d58e62504b56d0e05dad82358163
   Based on MAME's BSD-3-Clause PUMP_REPLACE_ESP_PROGRAM test fixture in
   esqpump.h at the reference commit above; it is synthetic MAME test code,
   not Ensoniq firmware or a factory effect program.
   Chord render: artifacts/es5510-emulation/mame_pump_summed_delay_chord.wav
-  SHA-256 1d91749ddcd0a0bd39eafaf36b0cd56949957b46a2da60d6afc264a271bca398
+  SHA-256 58a10421fc1292170b0917bcf15859c65a051c5d6ed7289624623b7ddacdc086
   132,300 frames; 13 instructions/frame (1,719,900 total); peak 23,304/32767;
-  RMS 0.09258 full scale. First nonzero output is at frame 2 in this WAV.
-  Comparing with the input stereo sum delayed by one frame gives exact samples
-  (NRMSE 0.0); the extra first frame is due to serial/pipeline scheduling.
-  Render used the input chord bundle; output proves summation, delay RAM and
-  audio serial execution in this adapted MAME test path.
+  RMS 0.09257 full scale. Bundle initializes MEMSIZ register 244 to 0xff,
+  selecting an 8-bit address shift; GPR offset 0x100 is one 16-bit DRAM word.
+  Impulse response first appears at frame 7440, and chord at frame 7441 (the
+  input chord begins on frame 1). Chord output exactly equals the summed stereo
+  input delayed by 7440 frames over the comparable region (NRMSE 0.0). A prior
+  render omitted MEMSIZ and mapped the delay address incorrectly; that invalid
+  result was replaced, and no one-frame delay claim remains.

@@ -73,10 +73,14 @@ g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Werror \
 The original test output WAV is
 `artifacts/es5510-emulation/original_stereo_swap_impulse.wav`. The second
 execution vector rendered `artifacts/es5510-emulation/mame_pump_summed_delay_chord.wav`:
-13 instructions per frame, 1,719,900 total; peak 23,304/32,767 and RMS 0.09258
-full scale. Its output exactly matches the six input serial lanes summed and
-delayed by one frame (NRMSE 0.0), exercising the MAME fixture's delay-RAM path.
-This remains synthetic MAME test code, not a historical effect program. Its first
+13 instructions per frame, 1,719,900 total; peak 23,304/32,767 and RMS 0.09257
+full scale. The corrected bundle initializes MEMSIZ register 244 to 0xff,
+selecting an 8-bit address shift, so its GPR offset 0x100 denotes one 16-bit
+DRAM word. The impulse appears at frame 7440; the chord output exactly matches
+the summed stereo input delayed 7440 frames (NRMSE 0.0). A prior bundle omitted
+MEMSIZ and was invalid as a delay-RAM test; the saved render/package now uses
+the corrected configuration. This remains synthetic MAME test code, not a
+historical effect program. Its first
 output frame is the input's stereo pair swapped (L=8192, R=24576); the rest
 of the 4-second impulse render is silence. It demonstrates real instruction
 execution and serial routing, not an Ensoniq effect sound or a
@@ -86,7 +90,7 @@ program and audio SHA-256 values are recorded in
 
 The stripped ARMv7 test kit is
 `artifacts/es5510-emulation/es5510-armv7-testkit.zip` (SHA-256
-`4f29c52d73aa4ddc575525b7cdea9c896d0465d77a98d1c2c7650e6e367918ac`). It
+`d67f135df77793da58264a0b4363d4bd320cc261d634daf3c8ba1e3cafae3739`). It
 contains the standalone renderer, benchmark, original stereo-swap program,
 MAME pump summing/delay fixture, and license notice. After manually copying it to a compatible ARMv7 Linux environment,
 unzip and run `./es5510-bench 44100 89` or `./es5510-bench 44100 160` to obtain

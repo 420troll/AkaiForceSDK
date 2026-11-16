@@ -7,6 +7,7 @@ sample_rate 44100
 host_serial 0x20
 gpr 6 0
 gpr 7 0x100
+gpr 244 0xff
 gpr 245 0x1d0f00
 instruction 0xffffeaa09000
 instruction 0xffffeba00000

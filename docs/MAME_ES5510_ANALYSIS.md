@@ -128,3 +128,14 @@ its execution-contract notes explicitly leave the ASR pump/HALT/serial policy
 open. MAME's ASR driver currently disables the ES5510 device. This is not
 evidence of a runnable ASR factory program in a standalone harness.
 
+
+
+### Issue #4 fixture correction (2026-11-16)
+
+The checked-in MAME pump test bundle must initialize special register 244
+(MEMSIZ) to `0xff`. MAME derives an 8-bit memory shift from its low eight one
+bits; with the fixture's `0x100` GPR offset this selects the next 16-bit DRAM
+word. The earlier bundle omitted that init, left the standalone default shift
+at 24, and therefore did not validate the intended long delay. The bundle and
+render are corrected; the impulse now first appears at frame 7440 (the 7440
+sample delay encoded by the fixture). Do not use the superseded one-frame claim.
