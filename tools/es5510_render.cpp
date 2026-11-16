@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <fstream>
 #include <iomanip>
@@ -17,6 +18,14 @@ struct Bundle {
     std::vector<std::uint64_t> instructions;
     std::vector<std::pair<std::uint32_t, std::int16_t>> dram;
     std::vector<std::pair<std::uint8_t, std::uint32_t>> gpr;
+    // Per-frame host-control schedule; values are raw 24-bit GPR units. For a
+    // MEMSIZ shift of zero, one unit addresses one 16-bit delay-RAM word.
+    struct LfoGpr {
+        std::uint8_t reg;
+        double baseUnits, depthUnits, rateHz, phaseCycles;
+        double minimumUnits, maximumUnits;
+    };
+    std::vector<LfoGpr> lfoGpr;
 };
 
 bool loadBundle(const std::string& path, Bundle& b, std::string& error) {
@@ -48,6 +57,17 @@ bool loadBundle(const std::string& path, Bundle& b, std::string& error) {
         } else if(key=="dram") {
             std::uint32_t address=0; int value16=0; if(!(in>>std::setbase(0)>>address>>value16) || address>=trollfx::esp::MameES5510::kDramWords || value16<-32768 || value16>32767) { error="invalid dram record"; return false; }
             b.dram.emplace_back(address,static_cast<std::int16_t>(value16));
+        } else if(key=="lfo_gpr") {
+            unsigned reg=0; Bundle::LfoGpr lfo{};
+            if(!(in>>reg>>lfo.baseUnits>>lfo.depthUnits>>lfo.rateHz>>lfo.phaseCycles>>lfo.minimumUnits>>lfo.maximumUnits) ||
+               reg>=192 || !std::isfinite(lfo.baseUnits) || !std::isfinite(lfo.depthUnits) ||
+               !std::isfinite(lfo.rateHz) || !std::isfinite(lfo.phaseCycles) ||
+               !std::isfinite(lfo.minimumUnits) || !std::isfinite(lfo.maximumUnits) ||
+               lfo.baseUnits<0 || lfo.depthUnits<0 || lfo.rateHz<0 ||
+               lfo.minimumUnits<0 || lfo.maximumUnits<lfo.minimumUnits ||
+               lfo.maximumUnits>0xffffff) { error="invalid lfo_gpr record"; return false; }
+            lfo.reg=static_cast<std::uint8_t>(reg);
+            b.lfoGpr.push_back(lfo);
         } else { error="unknown record at line "+std::to_string(lineNumber)+": "+key; return false; }
         std::string extra; if(in>>extra) { error="unexpected trailing data on line "+std::to_string(lineNumber); return false; }
     }
@@ -93,7 +113,15 @@ bool run(const std::string& bundlePath,const std::string& inPath,const std::stri
     trollfx::esp::MameES5510 cpu;if(!cpu.prepare()||!cpu.loadProgram(b.instructions.data(),b.instructions.size())){std::cerr<<"engine/program initialization failed\n";return false;}
     cpu.setHostSerial(b.hostSerial);for(auto [reg,value]:b.gpr)cpu.setRegister(reg,value);for(auto [addr,value]:b.dram)cpu.setDramWord(addr,value);
     std::vector<std::int16_t> out(in.size());std::uint64_t peak=0;
-    for(std::size_t i=0;i<in.size()/2;++i){std::array<std::int16_t,6> inputs{};inputs[4]=in[2*i];inputs[5]=in[2*i+1];std::array<std::int16_t,2> outputs{};cpu.processFrame(inputs,outputs);out[2*i]=outputs[0];out[2*i+1]=outputs[1];peak=std::max<std::uint64_t>(peak,std::max(std::abs(int(outputs[0])),std::abs(int(outputs[1]))));}
+    constexpr double twoPi=6.283185307179586476925286766559;
+    for(std::size_t i=0;i<in.size()/2;++i){
+        for(const auto& lfo:b.lfoGpr){
+            const double phase=twoPi*(lfo.rateHz*static_cast<double>(i)/sampleRate+lfo.phaseCycles);
+            const double value=std::clamp(lfo.baseUnits+lfo.depthUnits*std::sin(phase),lfo.minimumUnits,lfo.maximumUnits);
+            const auto offset=static_cast<std::uint32_t>(std::llround(value));
+            cpu.setRegister(lfo.reg,offset);
+        }
+        std::array<std::int16_t,6> inputs{};inputs[4]=in[2*i];inputs[5]=in[2*i+1];std::array<std::int16_t,2> outputs{};cpu.processFrame(inputs,outputs);out[2*i]=outputs[0];out[2*i+1]=outputs[1];peak=std::max<std::uint64_t>(peak,std::max(std::abs(int(outputs[0])),std::abs(int(outputs[1]))));}
     if(!writeWav(outPath,sampleRate,out)){std::cerr<<"failed writing output WAV\n";return false;}
     std::cout<<"Rendered "<<cpu.frames()<<" frames; ";
     const auto ipf=cpu.frames()?cpu.instructionsExecuted()/cpu.frames():0;
