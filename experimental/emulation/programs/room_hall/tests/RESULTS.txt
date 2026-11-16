@@ -1,0 +1,19 @@
+Room/Hall standalone test (MAME-derived ES5510 engine)
+44.1 kHz stereo, 2 s asymmetric impulse, strict C++17 build (-Wall -Wextra -Wpedantic -Werror)
+
+Room: 45 words/frame; first nonzero 310 frames (7.03 ms); peak 0.255096;
+clipped samples 0; energy [0,100 ms)=0.122562; energy [100 ms,2 s)=0.002772;
+stereo correlation 0.000149.
+
+Hall: 57 words/frame; first nonzero 217 frames (4.92 ms); peak 0.173981;
+clipped samples 0; energy [0,100 ms)=0.000499; energy [100 ms,2 s)=0.041435;
+stereo correlation 0.0.
+
+Combined L1 audio difference: 2.04153; PASS nonzero output, expected
+instruction count, no clipping, measurable Room/Hall difference.
+
+Envelope reverb test: strict C++17 build passed. Gated 37 words/frame, peak
+0.280518, clips 0; Reverse one-shot 49 words/frame, peak 0.234375, clips 0;
+Reverse retrigger 49 words/frame, peak 0.234375, clips 0. Reverse one-shot vs
+retrigger L1 output difference 1.2063 under the documented host envelopes.
+These are experimental instruction-level prototypes, not factory programs.
