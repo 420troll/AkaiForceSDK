@@ -1,0 +1,7 @@
+TROLLfx ESP Lab Series V0.4
+
+Copy the package folder into /media/SSD250g/VST2 Plugins/ on the Akai Force SSD. This plugin uses UID TfxS and folder `TROLLfx - VST - ESP Lab Series V0.4`, so it sits beside the ES5510 `TfxR` plugin.
+
+Inspect `/proc/mounts` before installation. If the SSD is mounted `noexec`, stop and use an executable plugin location. Do not change system mount settings persistently. After copying, restart/rescan the Force plug-in host. To roll back, remove or archive only the new `TROLLfx - VST - ESP Lab Series V0.4` folder; leave the existing ES5510 V0.3 and its backup alone.
+
+The fixed signal path is A -> B -> C -> D. A-only presets leave B/C/D bypassed for a reference comparison. The “ABCD Series” preset activates all four units.

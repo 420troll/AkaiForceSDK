@@ -17,7 +17,9 @@ public:
 
 enum class EffectAlgorithm : unsigned char {
     Delay, Chorus, Flanger, Room, Hall, Plate, ModulatedReverb,
-    VCFDistortion, EQPannerDDL, Compressor
+    VCFDistortion, EQPannerDDL, Compressor,
+    MultiTapDelay, DualDelay, EightVoiceChorus, ParametricEQ,
+    DeEsser, Expander, Gate, RumbleFilter
 };
 
 struct EffectParams {
@@ -46,6 +48,8 @@ struct EffectParams {
     float leftDelayMs = 0.0f, rightDelayMs = 0.0f, leftEchoMs = 0.0f, rightEchoMs = 0.0f;
     float echoLevel = 0.0f, bassFcHz = 180.0f, bassGainDb = 0.0f;
     float trebleFcHz = 6000.0f, trebleGainDb = 0.0f, inputTrimDb = 0.0f;
+    float mid1FcHz = 600.0f, mid1GainDb = 0.0f, mid1Q = 1.0f;
+    float mid2FcHz = 2400.0f, mid2GainDb = 0.0f, mid2Q = 1.0f;
     float decaySeconds = 2.0f, preDelayMs = 0.0f;
     float earlyLevel1 = 0.25f, earlyLevel2 = 0.15f;
     float earlyTime1Ms = 17.0f, earlyTime2Ms = 31.0f, outputDb = 0.0f;
@@ -75,6 +79,11 @@ private:
     void processVCFDistortion(const float* l,const float* r,float* ol,float* or_,std::size_t n) noexcept;
     void processPannerDDL(const float* l,const float* r,float* ol,float* or_,std::size_t n) noexcept;
     void processCompressor(const float* l,const float* r,float* ol,float* or_,std::size_t n) noexcept;
+    void processEightVoiceChorus(const float* l,const float* r,float* ol,float* or_,std::size_t n) noexcept;
+    void processParametricEQ(const float* l,const float* r,float* ol,float* or_,std::size_t n) noexcept;
+    void processDeEsser(const float* l,const float* r,float* ol,float* or_,std::size_t n) noexcept;
+    void processExpander(const float* l,const float* r,float* ol,float* or_,std::size_t n,bool gate) noexcept;
+    void processRumbleFilter(const float* l,const float* r,float* ol,float* or_,std::size_t n) noexcept;
     float sampleRate_ = 44100.0f, phase_ = 0.0f;
     EffectAlgorithm algorithm_ = EffectAlgorithm::Delay;
     EffectParams params_{};
@@ -82,7 +91,7 @@ private:
     DelayLine tank_[4]{};
     DelayLine diffuser_[4]{};
     float damp_[4]{};
-    float filter_[16]{}, envelope_[2]{}, gateGain_ = 1.0f;
+    float filter_[32]{}, envelope_[2]{}, gateGain_ = 1.0f;
     float eqBass_[2]{}, eqTreble_[2]{}, heldPhase_ = 0.0f, holdPhase_ = 0.0f;
     std::size_t holdCounter_ = 0;
     DP4InspiredReverb reverb_{};

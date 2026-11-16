@@ -1,0 +1,36 @@
+{
+  "kit":{"theme":"amber","accent":"ffe4a044"},
+  "style":{"background":"ff17191b","accent":"ffe4a044","text":"fff5e8cd","muted":"ff9a927f"},
+  "pages":[
+    {"name":"SERIES","controls":[
+      {"param":"A Algorithm","widget":"slider","overlay":"menu"},{"param":"A Mix","widget":"fader"},{"param":"A Bypass","widget":"switch"},
+      {"param":"B Algorithm","widget":"slider","overlay":"menu"},{"param":"B Mix","widget":"fader"},{"param":"B Bypass","widget":"switch"},
+      {"param":"C Algorithm","widget":"slider","overlay":"menu"},{"param":"C Mix","widget":"fader"},{"param":"C Bypass","widget":"switch"},
+      {"param":"D Algorithm","widget":"slider","overlay":"menu"},{"param":"D Mix","widget":"fader"},{"param":"D Bypass","widget":"switch"}
+    ]},
+    {"name":"UNIT A","controls":[
+      {"param":"A Algorithm","widget":"slider","overlay":"menu"},{"param":"A Mix","widget":"fader"},{"param":"A Bypass","widget":"switch"},
+      {"param":"A Time / Cutoff","widget":"knob"},{"param":"A Feedback / Regen","widget":"knob"},{"param":"A Rate","widget":"knob"},{"param":"A Depth / Drive","widget":"knob"},
+      {"param":"A Decay","widget":"knob"},{"param":"A Pre-delay","widget":"knob"},{"param":"A Diffusion / Bass EQ","widget":"knob"},{"param":"A Damping / Treble EQ","widget":"knob"},
+      {"param":"A Width / Makeup","widget":"knob"},{"param":"A Threshold","widget":"knob"},{"param":"A Ratio","widget":"knob"},{"param":"A Attack","widget":"knob"},{"param":"A Release","widget":"knob"}
+    ]},
+    {"name":"UNIT B","controls":[
+      {"param":"B Algorithm","widget":"slider","overlay":"menu"},{"param":"B Mix","widget":"fader"},{"param":"B Bypass","widget":"switch"},
+      {"param":"B Time / Cutoff","widget":"knob"},{"param":"B Feedback / Regen","widget":"knob"},{"param":"B Rate","widget":"knob"},{"param":"B Depth / Drive","widget":"knob"},
+      {"param":"B Decay","widget":"knob"},{"param":"B Pre-delay","widget":"knob"},{"param":"B Diffusion / Bass EQ","widget":"knob"},{"param":"B Damping / Treble EQ","widget":"knob"},
+      {"param":"B Width / Makeup","widget":"knob"},{"param":"B Threshold","widget":"knob"},{"param":"B Ratio","widget":"knob"},{"param":"B Attack","widget":"knob"},{"param":"B Release","widget":"knob"}
+    ]},
+    {"name":"UNIT C","controls":[
+      {"param":"C Algorithm","widget":"slider","overlay":"menu"},{"param":"C Mix","widget":"fader"},{"param":"C Bypass","widget":"switch"},
+      {"param":"C Time / Cutoff","widget":"knob"},{"param":"C Feedback / Regen","widget":"knob"},{"param":"C Rate","widget":"knob"},{"param":"C Depth / Drive","widget":"knob"},
+      {"param":"C Decay","widget":"knob"},{"param":"C Pre-delay","widget":"knob"},{"param":"C Diffusion / Bass EQ","widget":"knob"},{"param":"C Damping / Treble EQ","widget":"knob"},
+      {"param":"C Width / Makeup","widget":"knob"},{"param":"C Threshold","widget":"knob"},{"param":"C Ratio","widget":"knob"},{"param":"C Attack","widget":"knob"},{"param":"C Release","widget":"knob"}
+    ]},
+    {"name":"UNIT D","controls":[
+      {"param":"D Algorithm","widget":"slider","overlay":"menu"},{"param":"D Mix","widget":"fader"},{"param":"D Bypass","widget":"switch"},
+      {"param":"D Time / Cutoff","widget":"knob"},{"param":"D Feedback / Regen","widget":"knob"},{"param":"D Rate","widget":"knob"},{"param":"D Depth / Drive","widget":"knob"},
+      {"param":"D Decay","widget":"knob"},{"param":"D Pre-delay","widget":"knob"},{"param":"D Diffusion / Bass EQ","widget":"knob"},{"param":"D Damping / Treble EQ","widget":"knob"},
+      {"param":"D Width / Makeup","widget":"knob"},{"param":"D Threshold","widget":"knob"},{"param":"D Ratio","widget":"knob"},{"param":"D Attack","widget":"knob"},{"param":"D Release","widget":"knob"}
+    ]}
+  ]
+}

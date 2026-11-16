@@ -37,7 +37,7 @@ bool EffectsUnit::prepare(float sr,int maxBlock) {
 }
 void EffectsUnit::reset() noexcept {
     delayL_.clear(); delayR_.clear(); for(auto& d:tank_) d.clear();
-    std::fill(damp_,damp_+4,0.0f); std::fill(filter_,filter_+16,0.0f);
+    std::fill(damp_,damp_+4,0.0f); std::fill(filter_,filter_+32,0.0f);
     std::fill(envelope_,envelope_+2,0.0f); std::fill(eqBass_,eqBass_+2,0.0f);
     std::fill(eqTreble_,eqTreble_+2,0.0f); gateGain_=1.0f; phase_=heldPhase_=holdPhase_=0.0f;
     holdCounter_=0; reverb_.reset();
@@ -87,6 +87,14 @@ void EffectsUnit::process(const float* l,const float* r,float* ol,float* or_,std
     case EffectAlgorithm::VCFDistortion: processVCFDistortion(l,r,ol,or_,n); break;
     case EffectAlgorithm::EQPannerDDL: processPannerDDL(l,r,ol,or_,n); break;
     case EffectAlgorithm::Compressor: processCompressor(l,r,ol,or_,n); break;
+    case EffectAlgorithm::MultiTapDelay: processPannerDDL(l,r,ol,or_,n); break;
+    case EffectAlgorithm::DualDelay: processPannerDDL(l,r,ol,or_,n); break;
+    case EffectAlgorithm::EightVoiceChorus: processEightVoiceChorus(l,r,ol,or_,n); break;
+    case EffectAlgorithm::ParametricEQ: processParametricEQ(l,r,ol,or_,n); break;
+    case EffectAlgorithm::DeEsser: processDeEsser(l,r,ol,or_,n); break;
+    case EffectAlgorithm::Expander: processExpander(l,r,ol,or_,n,false); break;
+    case EffectAlgorithm::Gate: processExpander(l,r,ol,or_,n,true); break;
+    case EffectAlgorithm::RumbleFilter: processRumbleFilter(l,r,ol,or_,n); break;
     default: processDelay(l,r,ol,or_,n,false,false); break;
     }
 }
@@ -174,7 +182,8 @@ void EffectsUnit::processVCFDistortion(const float* l,const float* r,float* ol,f
                 filter_[s+1]=filter_[s]; filter_[s]=x; filter_[s+3]=filter_[s+2]; filter_[s+2]=y;
                 x=y;
             }
-            out[ch]=(params_.distortionBypass?x:std::tanh(x*drive))*outGain;
+            const float wet=(params_.distortionBypass?x:std::tanh(x*drive))*outGain;
+            out[ch]=in[ch]+(wet-in[ch])*params_.mix;
         }
         ol[i]=out[0]; or_[i]=out[1];
     }
@@ -197,7 +206,7 @@ void EffectsUnit::processCompressor(const float* l,const float* r,float* ol,floa
         const float target=desiredOpen?1.0f:0.0f;
         const float gc=target>gateGain_?atk:gateRel; gateGain_=gc*gateGain_+(1.0f-gc)*target;
         const float g=gain*gateGain_*makeup;
-        ol[i]=l[i]*g; or_[i]=r[i]*g;
+        ol[i]=l[i]+(l[i]*g-l[i])*params_.mix; or_[i]=r[i]+(r[i]*g-r[i])*params_.mix;
     }
 }
 
@@ -227,12 +236,94 @@ void EffectsUnit::processPannerDDL(const float* l,const float* r,float* ol,float
             const float a=ch==0?dL:dR, e=ch==0?eL:eR;
             const float delayed=(ch==0?delayL_:delayR_).read(a);
             const float echo=(ch==0?delayL_:delayR_).read(e);
-            (ch==0?delayL_:delayR_).write(eq+echo*params_.echoLevel*params_.feedback);
-            wet[ch]=delayed+echo*params_.echoLevel;
-            if(ch==0) wet[ch]*=1.0f-pan; else wet[ch]*=pan;
+            float tap=echo;
+            if(algorithm_==EffectAlgorithm::MultiTapDelay){
+                const auto& line=(ch==0?delayL_:delayR_);
+                tap=0.40f*line.read(e)+0.32f*line.read(std::min(float(line.size-1),e*1.73f))+0.20f*line.read(std::min(float(line.size-1),e*2.41f))+0.08f*line.read(std::min(float(line.size-1),e*3.13f));
+            }
+            const float writeEcho=algorithm_==EffectAlgorithm::MultiTapDelay?tap:echo;
+            (ch==0?delayL_:delayR_).write(eq+writeEcho*params_.echoLevel*params_.feedback);
+            wet[ch]=delayed+tap*params_.echoLevel;
+            if(algorithm_!=EffectAlgorithm::DualDelay){if(ch==0) wet[ch]*=1.0f-pan; else wet[ch]*=pan;}
         }
         const float dryL=x[0],dryR=x[1];
         ol[i]=dryL+(wet[0]-dryL)*params_.mix; or_[i]=dryR+(wet[1]-dryR)*params_.mix;
+    }
+}
+
+void EffectsUnit::processEightVoiceChorus(const float* l,const float* r,float* ol,float* or_,std::size_t n) noexcept {
+    const float phaseInc=2.0f*pi*params_.rateHz/sampleRate_;
+    const float base=std::max(4.0f,params_.timeMs*.001f*sampleRate_);
+    const float depth=std::min(params_.depthMs,15.0f)*.001f*sampleRate_;
+    const float fb=clampFeedback(params_.feedback);
+    for(std::size_t i=0;i<n;++i){
+        const float inL=l[i],inR=r[i],phase=phase_;
+        float wetL=0.0f,wetR=0.0f;
+        for(int v=0;v<8;++v){
+            const float offset=2.0f*pi*static_cast<float>(v)/8.0f;
+            const float dL=std::max(2.0f,base+depth*std::sin(phase+offset));
+            const float dR=std::max(2.0f,base+depth*std::sin(phase-offset+pi*.5f));
+            wetL+=delayL_.read(dL);wetR+=delayR_.read(dR);
+        }
+        delayL_.write(inL+fb*wetL*.125f);delayR_.write(inR+fb*wetR*.125f);
+        phase_+=phaseInc;if(phase_>=2.0f*pi)phase_-=2.0f*pi;
+        wetL*=.125f;wetR*=.125f;
+        ol[i]=inL+(wetL-inL)*params_.mix;or_[i]=inR+(wetR-inR)*params_.mix;
+    }
+}
+
+void EffectsUnit::processParametricEQ(const float* l,const float* r,float* ol,float* or_,std::size_t n) noexcept {
+    struct Coeff{float b0,b1,b2,a1,a2;};
+    const auto peaking=[this](float fc,float q,float db) noexcept {
+        fc=std::clamp(fc,20.0f,sampleRate_*.45f);q=std::clamp(q,.25f,12.0f);
+        const float A=std::pow(10.0f,std::clamp(db,-24.0f,24.0f)/40.0f),w=2.0f*pi*fc/sampleRate_;
+        const float c=std::cos(w),alpha=std::sin(w)/(2.0f*q),a0=1.0f+alpha/A;
+        return Coeff{(1.0f+alpha*A)/a0,(-2.0f*c)/a0,(1.0f-alpha*A)/a0,(-2.0f*c)/a0,(1.0f-alpha/A)/a0};
+    };
+    const Coeff c[2]={peaking(params_.mid1FcHz,params_.mid1Q,params_.mid1GainDb),peaking(params_.mid2FcHz,params_.mid2Q,params_.mid2GainDb)};
+    const float trim=std::pow(10.0f,params_.inputTrimDb/20.0f);
+    for(std::size_t i=0;i<n;++i){float out[2]{};const float in[2]={l[i]*trim,r[i]*trim};
+        for(int ch=0;ch<2;++ch){float x=in[ch];
+            for(int band=0;band<2;++band){const int s=16+(band*2+ch)*4;
+                const float y=c[band].b0*x+c[band].b1*filter_[s]+c[band].b2*filter_[s+1]-c[band].a1*filter_[s+2]-c[band].a2*filter_[s+3];
+                filter_[s+1]=filter_[s];filter_[s]=x;filter_[s+3]=filter_[s+2];filter_[s+2]=y;x=y;
+            }out[ch]=x;
+        }ol[i]=in[0]+(out[0]-in[0])*params_.mix;or_[i]=in[1]+(out[1]-in[1])*params_.mix;
+    }
+}
+
+void EffectsUnit::processDeEsser(const float* l,const float* r,float* ol,float* or_,std::size_t n) noexcept {
+    const float a=1.0f-std::exp(-2.0f*pi*std::clamp(params_.cutoffHz,1500.0f,sampleRate_*.45f)/sampleRate_);
+    const float atk=std::exp(-1.0f/(.001f*std::max(.05f,params_.attackMs)*sampleRate_));
+    const float rel=std::exp(-1.0f/(.001f*params_.releaseMs*sampleRate_));
+    const float threshold=std::pow(10.0f,params_.thresholdDb/20.0f),ratio=std::max(1.0f,params_.ratio);
+    for(std::size_t i=0;i<n;++i){const float in[2]={l[i],r[i]};float out[2]{};
+        for(int ch=0;ch<2;++ch){const int s=ch*2;const float low=filter_[s]+a*(in[ch]-filter_[s]);filter_[s]=low;const float high=in[ch]-low;
+            const float mag=std::abs(high),coef=mag>envelope_[ch]?atk:rel;envelope_[ch]=coef*envelope_[ch]+(1.0f-coef)*mag;
+            const float gain=envelope_[ch]>threshold?std::pow(threshold/envelope_[ch],1.0f-1.0f/ratio):1.0f;
+            out[ch]=low+high*gain;
+        }ol[i]=in[0]+(out[0]-in[0])*params_.mix;or_[i]=in[1]+(out[1]-in[1])*params_.mix;
+    }
+}
+
+void EffectsUnit::processExpander(const float* l,const float* r,float* ol,float* or_,std::size_t n,bool gate) noexcept {
+    const float atk=std::exp(-1.0f/(.001f*std::max(.05f,params_.attackMs)*sampleRate_));
+    const float rel=std::exp(-1.0f/(.001f*params_.releaseMs*sampleRate_));
+    const float threshold=std::pow(10.0f,params_.thresholdDb/20.0f),ratio=std::max(1.0f,params_.ratio);
+    for(std::size_t i=0;i<n;++i){const float peak=std::max(std::abs(l[i]),std::abs(r[i]));const float c=peak>envelope_[0]?atk:rel;envelope_[0]=c*envelope_[0]+(1.0f-c)*peak;
+        float target=1.0f;
+        if(gate)target=envelope_[0]>=threshold?1.0f:0.0f;
+        else if(envelope_[0]<threshold)target=std::pow(std::max(envelope_[0],1.0e-8f)/threshold,ratio-1.0f);
+        gateGain_+=(target-gateGain_)*(target>gateGain_?1.0f-atk:1.0f-rel);
+        const float g=1.0f+(std::clamp(gateGain_,0.0f,1.0f)-1.0f)*params_.mix;ol[i]=l[i]*g;or_[i]=r[i]*g;
+    }
+}
+
+void EffectsUnit::processRumbleFilter(const float* l,const float* r,float* ol,float* or_,std::size_t n) noexcept {
+    const float a=1.0f-std::exp(-2.0f*pi*std::clamp(params_.cutoffHz,20.0f,1000.0f)/sampleRate_);
+    for(std::size_t i=0;i<n;++i){float out[2]{};const float in[2]={l[i],r[i]};
+        for(int ch=0;ch<2;++ch){const int s=ch*2;filter_[s]+=a*(in[ch]-filter_[s]);out[ch]=in[ch]-filter_[s];}
+        ol[i]=in[0]+(out[0]-in[0])*params_.mix;or_[i]=in[1]+(out[1]-in[1])*params_.mix;
     }
 }
 } // namespace trollfx

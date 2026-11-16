@@ -1,0 +1,16 @@
+{
+  "name": "ESP Lab Series V0.4",
+  "manufacturer": "TROLLfx",
+  "version": "0.4.0",
+  "format": "vst2",
+  "kind": "effect",
+  "uid": "TfxS",
+  "numInputs": 2,
+  "numOutputs": 2,
+  "category": "Effect",
+  "file32": "VST/trollfx-esp-lab-series-v04-arm32.so",
+  "file64": "VST/trollfx-esp-lab-series-v04-arm64.so",
+  "description": "Four independently controlled, manual-informed stereo effect units in a fixed A to B to C to D series.",
+  "author": "TROLLfx",
+  "license": "TROLLfx original DSP; public DP/4 manual informed"
+}

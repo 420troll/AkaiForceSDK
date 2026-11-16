@@ -1,4 +1,89 @@
-# TROLLfx ESP Lab V0.1 — Stage 002 handoff
+# TROLLfx ESP Lab — Development handoff
+
+## Current milestone: ESP Lab Series V0.4
+
+Date: 2026-11-16 UTC
+
+Branch: `issue8-es5510-v03-reverb-lab` (uncommitted at handoff creation; commit
+SHA to be filled after publishing).
+
+### Architecture and scope
+
+- New independent VST2 identity: TROLLfx ESP Lab Series V0.4, UID `TfxS`.
+- Four independently parameterized stereo units always run in series A → B →
+  C → D. The order is not user configurable. Per-unit bypass is a transparent
+  pass-through and each unit has its own mix.
+- Choices implemented: Delay, Chorus, Flanger, Room, Hall, Plate, Modulated
+  Reverb, VCF Distortion, EQ-Panner-DDL, Compressor, Multitap Delay, Dual
+  Delay, Eight-Voice Chorus, Parametric EQ, De-Esser, Expander, Gate and Rumble
+  Filter.
+- The original ten native engines are retained. The last eight are original
+  TROLLfx implementations of DP/4 documented effect families; they are not
+  recovered factory algorithms. The local TeleBrain Max for Live editor
+  extraction supplied names and schema clues (52 tables, 1,137 rows), but is
+  excluded from source control and redistribution. Table offsets are not
+  treated as physical parameter values.
+- Audio processing uses the native C++ DSP engine, not the ES5510 emulator.
+  V0.4 is in a separate UID/folder and does not replace the installed `TfxR`
+  ES5510 NonLin Reverb plugin.
+
+### Build and verification
+
+- Official Akai SDK: `inmusic-software/mpc-plugin-builder-sdk`, commit
+  `febd2ca5bd9eb16c4a412837196e145566bc981b`; Zig 0.17.1.
+- Native strict DSP smoke test: PASS for the fixed four-unit chain and all 18
+  algorithm selections; finite output at 44.1/48 kHz.
+- Official SDK built native Linux, ARMv7 hard-float and ARM64 binaries. ARMv7
+  exports `VSTPluginMain`, is UID-matched to `TfxS`, and requires GLIBC ≤2.27.
+- Strict SDK validation: PASS, 0 errors, 0 warnings; 5 TUI tabs and Q-Link maps
+  validate, all 64 parameters are in range.
+- SDK host simulation at 44.1 kHz/128 frames and 48 kHz/4096 frames: PASS, 20
+  checks each. Includes 32/512 block handling, parameter sweep, state restore,
+  in-place processing, silence and finite-output checks. Desktop timing is not
+  a Force CPU measurement.
+- Commands:
+
+```sh
+g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Werror -I. \
+  src/original/audio_engine.cpp \
+  plugins/TROLLfxESPLabSeriesV04/tests/series_smoke.cpp \
+  -o /tmp/series-smoke && /tmp/series-smoke
+PYTHONPATH=/tmp/trollfx-zig \
+ZIG_GLOBAL_CACHE_DIR=/tmp/trollfx-zig-cache \
+ZIG_LOCAL_CACHE_DIR=/tmp/trollfx-zig-local-cache \
+python3 /tmp/mpc-plugin-builder-sdk/tools/build.py \
+  plugins/TROLLfxESPLabSeriesV04 --target all --toolchain zig --zig /usr/bin/python3
+python3 /tmp/mpc-plugin-builder-sdk/tools/validate.py --strict \
+  'plugins/TROLLfxESPLabSeriesV04/build/TROLLfx - VST - ESP Lab Series V0.4'
+```
+
+### Package and installation
+
+- Package: `artifacts/esplab-series/v04/trollfx-esp-lab-series-v04-akai-force-armv7.zip`
+- SHA-256: `5da46ee9ded6525ca15b65ceb66c9b6fb4acc7b3f468267016fba175a7a0bfa1`
+- Package contents include ARMv7 and ARM64 VST binaries, metadata, Force
+  touchscreen/Q-Link assets, and instructions.
+- Force install path:
+  `/media/SSD250g/VST2 Plugins/TROLLfx - VST - ESP Lab Series V0.4`
+- After extracting the ZIP on a host, install with (first verify the target
+  folder does not already exist):
+
+```sh
+cp -a 'TROLLfx - VST - ESP Lab Series V0.4' \
+  '/media/SSD250g/VST2 Plugins/'
+```
+
+- Deployment status: the TfxS folder has been copied to the Force after
+  confirming the destination was absent, `/proc/mounts` had no `noexec` flag,
+  and the TfxR folder remained present. Remote and local ARM32 binary SHA-256s
+  match (`3cd060044b934745de2d0fe3ce2c7d44f5e26b74fa8f4e3ac01680dd978b1822`).
+  The plugin host was not restarted or rescanned, so hardware discovery and
+  playback remain unverified.
+- Rollback removes only the V0.4 folder:
+  `rm -rf '/media/SSD250g/VST2 Plugins/TROLLfx - VST - ESP Lab Series V0.4'`.
+  Keep the separate `TfxR` installation and its existing backup untouched.
+
+## Earlier V0.1 Stage 002 handoff
 
 Date: 2026-11-16 UTC
 
