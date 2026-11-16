@@ -13,8 +13,10 @@ The pages are ROUTING, UNIT A-D, and MOD A-D. Each unit page presents common
 controls and conditional VCF Distortion / Compressor controls. Each modulation
 page binds both stable, per-unit slots directly: Enabled, Source, Destination,
 Min, Max, and Invert. This preserves the host's built-in parameter chunk state.
-The V0.3 schema currently has no Controller 1-8 host parameters, so a separate
-CONTROLLERS page is not included; add it only when those parameters land.
+The DSP modulation core recognizes host Controller 1-8 sources, but this V0.3
+plugin constructor does not expose host-automatable Controller 1-8 values and
+the unit Source choices remain Off/Internal LFO/Envelope. Therefore no separate
+CONTROLLERS page is included yet.
 
 The official SDK limits a page to 16 controls. Its generator now accepts an
 optional `backgroundImage` filename in `ui.json`; it places that image in both
