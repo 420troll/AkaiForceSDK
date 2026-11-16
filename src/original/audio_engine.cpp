@@ -40,6 +40,7 @@ void EffectsUnit::reset() noexcept {
     std::fill(damp_,damp_+4,0.0f); std::fill(filter_,filter_+16,0.0f);
     std::fill(envelope_,envelope_+2,0.0f); std::fill(eqBass_,eqBass_+2,0.0f);
     std::fill(eqTreble_,eqTreble_+2,0.0f); gateGain_=1.0f; phase_=heldPhase_=holdPhase_=0.0f;
+    std::fill(preEqHpInput_,preEqHpInput_+2,0.0f); std::fill(preEqHpOutput_,preEqHpOutput_+2,0.0f);
     holdCounter_=0; reverb_.reset();
 }
 void EffectsUnit::setAlgorithm(EffectAlgorithm a) noexcept { algorithm_=a; setParams(params_); }
@@ -56,6 +57,7 @@ void EffectsUnit::setParams(const EffectParams& p) noexcept {
     params_.distortionGainInDb=std::clamp(p.distortionGainInDb,-24.0f,48.0f);
     params_.distortionGainOutDb=std::clamp(p.distortionGainOutDb,-48.0f,24.0f);
     params_.driveDb=std::clamp(p.driveDb,0.0f,48.0f);
+    params_.preEqHighPassHz=std::clamp(p.preEqHighPassHz,0.0f,1000.0f);
     params_.preVcfCutoffHz=std::clamp(p.preVcfCutoffHz,20.0f,20000.0f); params_.preVcfQ=std::clamp(p.preVcfQ,0.5f,25.0f); params_.preVcfEnvDepth=std::clamp(p.preVcfEnvDepth,-1.0f,1.0f);
     params_.postVcfCutoffHz=std::clamp(p.postVcfCutoffHz,20.0f,20000.0f); params_.postVcfQ=std::clamp(p.postVcfQ,0.5f,25.0f); params_.postVcfEnvDepth=std::clamp(p.postVcfEnvDepth,-1.0f,1.0f);
     params_.envelopeAttackMs=std::clamp(p.envelopeAttackMs,0.05f,10000.0f); params_.envelopeReleaseMs=std::clamp(p.envelopeReleaseMs,1.0f,10000.0f);
@@ -158,9 +160,16 @@ void EffectsUnit::processVCFDistortion(const float* l,const float* r,float* ol,f
     const float att=std::exp(-1.0f/(.001f*params_.envelopeAttackMs*sampleRate_));
     const float rel=std::exp(-1.0f/(.001f*params_.envelopeReleaseMs*sampleRate_));
     const float inGain=std::pow(10.0f,params_.distortionGainInDb/20.0f), drive=std::pow(10.0f,params_.driveDb/20.0f), outGain=std::pow(10.0f,params_.distortionGainOutDb/20.0f);
+    const float hpCoeff=params_.preEqHighPassHz>0.0f?std::exp(-2.0f*pi*std::min(params_.preEqHighPassHz,sampleRate_*.45f)/sampleRate_):0.0f;
     for(std::size_t i=0;i<n;++i) {
         float in[2]={l[i]*inGain,r[i]*inGain}, out[2]{};
         for(int ch=0;ch<2;++ch) {
+            if(params_.preEqHighPassHz>0.0f) {
+                const float hp=hpCoeff*(preEqHpOutput_[ch]+in[ch]-preEqHpInput_[ch]);
+                preEqHpInput_[ch]=in[ch]; preEqHpOutput_[ch]=hp; in[ch]=hp;
+            } else {
+                preEqHpInput_[ch]=in[ch]; preEqHpOutput_[ch]=0.0f;
+            }
             const float mag=std::abs(in[ch]); envelope_[ch]=mag>envelope_[ch]?att*envelope_[ch]+(1.0f-att)*mag:rel*envelope_[ch]+(1.0f-rel)*mag;
             float x=in[ch];
             for(int stage=0;stage<2;++stage) {

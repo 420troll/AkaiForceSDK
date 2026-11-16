@@ -36,6 +36,7 @@ struct EffectParams {
     float cutoffHz = 1800.0f;
     float distortionGainInDb = 12.0f, distortionGainOutDb = -6.0f;
     float driveDb = 12.0f;
+    float preEqHighPassHz = 0.0f;
     float preVcfCutoffHz = 5000.0f, preVcfQ = 0.707f, preVcfEnvDepth = 0.0f;
     float postVcfCutoffHz = 5000.0f, postVcfQ = 0.707f, postVcfEnvDepth = 0.0f;
     float envelopeAttackMs = 10.0f, envelopeReleaseMs = 100.0f;
@@ -83,6 +84,7 @@ private:
     DelayLine diffuser_[4]{};
     float damp_[4]{};
     float filter_[16]{}, envelope_[2]{}, gateGain_ = 1.0f;
+    float preEqHpInput_[2]{}, preEqHpOutput_[2]{};
     float eqBass_[2]{}, eqTreble_[2]{}, heldPhase_ = 0.0f, holdPhase_ = 0.0f;
     std::size_t holdCounter_ = 0;
     DP4InspiredReverb reverb_{};
