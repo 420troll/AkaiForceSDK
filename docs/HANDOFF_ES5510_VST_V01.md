@@ -70,7 +70,13 @@ Enable External Plugin Support in Force Preferences > Enhancements (Beta), then 
 
 ## Commits
 
-Phase 2 base: `fdc25514e6c74b9ae0e3fe1da6ca02f62e11a429`. The release source/package commit and final handoff commit are recorded below after integration.
+Phase 2 base: `fdc25514e6c74b9ae0e3fe1da6ca02f62e11a429`.
+
+- Wrapper/UI scaffold: `f78a741`, `cff5104`, `d2ce71b`
+- Real-time processor adapter: `d936b1a`, `1dbfd8a`
+- VST/package release milestone: `a950ea1c788b2170719cc967c68f78a368fd8cfc`
+
+This handoff update is a docs-only commit immediately after that release milestone.
 
 ## Next steps
 
