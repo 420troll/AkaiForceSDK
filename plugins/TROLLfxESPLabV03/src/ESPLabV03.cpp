@@ -3,6 +3,7 @@
 #include "../../../src/original/dp4_reverb.hpp"
 #include "../../../src/original/modulation.hpp"
 #include "../../../src/original/force_routing.hpp"
+#include "parameter_schema.hpp"
 #include <array>
 #include <vector>
 #include <algorithm>
@@ -14,9 +15,21 @@ constexpr trollfx::EffectAlgorithm algorithm(int x) { return static_cast<trollfx
 
 class ESPLabV03 final : public mpc::Plugin {
     static constexpr int N=4, PER=34, BASE=10;
+    static constexpr int EXTRA_BASE=BASE+N*PER;
+    static constexpr int EXTRA_PER=static_cast<int>(esp_lab::kAlgorithmSpecificParameterCount);
     enum Global { kRoute=0,kActive=1 };
     enum Unit { kAlgo=0,kTime,kFeedback,kRate,kDepth,kDecay,kPredelay,kDamping,kDiffusion,kWidth,kCutoff,kDrive,kRatio,kThreshold,kAttack,kRelease,kBypass,kMix,kEarlyTime1,kEarlyLevel1,kEarlyTime2,kEarlyLevel2,kM1Enabled,kM1Source,kM1Dest,kM1Min,kM1Max,kM1Invert,kM2Enabled,kM2Source,kM2Dest,kM2Min,kM2Max,kM2Invert };
     static int ix(int u,int p){ return BASE+u*PER+p; }
+    static int extraIx(int u,int p){ return EXTRA_BASE+u*EXTRA_PER+p; }
+    static void addSpecificParameter(mpc::Plugin& plugin, const esp_lab::ParameterSpec& spec, char unit) {
+        const std::string suffix(1,unit);
+        const std::string id=std::string(spec.stableStem)+suffix;
+        const std::string name="Unit "+suffix+" "+spec.displayName;
+        using namespace mpc;
+        if(spec.kind==esp_lab::ParamKind::Boolean) plugin.addParam(boolParam(id.c_str(),name.c_str(),spec.defaultValue>=0.5f));
+        else if(spec.kind==esp_lab::ParamKind::Logarithmic) plugin.addParam(logParam(id.c_str(),name.c_str(),spec.minimum,spec.maximum,spec.defaultValue,spec.unit,0));
+        else plugin.addParam(floatParam(id.c_str(),name.c_str(),spec.minimum,spec.maximum,spec.defaultValue,spec.unit,0));
+    }
     static float logNorm(float x,float lo,float hi){return std::clamp(std::log(std::max(x,lo)/lo)/std::log(hi/lo),0.0f,1.0f);}
     static float logDenorm(float x,float lo,float hi){return lo*std::pow(hi/lo,std::clamp(x,0.0f,1.0f));}
     static mpc::PluginInfo info(){ mpc::PluginInfo i; i.name="ESP Lab V0.3"; i.vendor="TROLLfx"; i.uniqueId=MPC_FOURCC('T','f','x','3'); i.version=3000; i.isInstrument=false; i.numInputs=2; i.numOutputs=2; return i; }
@@ -58,6 +71,10 @@ public:
                 addParam(boolParam(("mod"+z+"inv").c_str(),("Unit "+s+" Mod"+std::to_string(slot+1)+" Invert").c_str(),false));
             }
         }
+        // Append typed algorithm-specific controls so the original 146 stable
+        // parameter IDs and indices remain unchanged.
+        for(int u=0;u<N;++u) for(const auto& spec:esp_lab::kAlgorithmSpecificParameters)
+            addSpecificParameter(*this,spec,char('A'+u));
     }
     void prepare(double sr,int) override { for(auto& e:engines_) e.prepare(float(sr),512); for(auto& e:reverbs_) e.prepare(float(sr)); for(auto& b:buffers_) b.assign(512,0); feedbackL_.assign(512,0); feedbackR_.assign(512,0); }
     void reset() override { for(auto& e:engines_) e.reset(); for(auto& e:reverbs_) e.reset(); for(auto& m:modulators_)m.reset(); std::fill(feedbackL_.begin(),feedbackL_.end(),0); std::fill(feedbackR_.begin(),feedbackR_.end(),0); }
@@ -79,7 +96,15 @@ public:
             if(getBool(ix(u,kBypass))) { for(std::size_t i=0;i<n;++i){dstL[i]=srcL[i];dstR[i]=srcR[i];} }
             else {
                 const int ai=getInt(ix(u,kAlgo));
-                trollfx::EffectParams baseP; baseP.timeMs=get(ix(u,kTime)); baseP.feedback=get(ix(u,kFeedback))*.01f; baseP.rateHz=get(ix(u,kRate)); baseP.depthMs=get(ix(u,kDepth)); baseP.mix=get(ix(u,kMix))*.01f; baseP.diffusion=get(ix(u,kDiffusion))*.01f; baseP.damping=get(ix(u,kDamping))*.01f; baseP.width=get(ix(u,kWidth))*.01f; baseP.cutoffHz=get(ix(u,kCutoff)); baseP.depthMs=std::min(30.0f,baseP.depthMs+get(ix(u,kDrive))*.2f); baseP.ratio=get(ix(u,kRatio)); baseP.thresholdDb=get(ix(u,kThreshold)); baseP.attackMs=get(ix(u,kAttack)); baseP.releaseMs=get(ix(u,kRelease));
+                trollfx::EffectParams baseP; baseP.timeMs=get(ix(u,kTime)); baseP.feedback=get(ix(u,kFeedback))*.01f; baseP.rateHz=get(ix(u,kRate)); baseP.depthMs=get(ix(u,kDepth)); baseP.mix=get(ix(u,kMix))*.01f; baseP.diffusion=get(ix(u,kDiffusion))*.01f; baseP.damping=get(ix(u,kDamping))*.01f; baseP.width=get(ix(u,kWidth))*.01f; baseP.cutoffHz=get(ix(u,kCutoff)); baseP.driveDb=get(ix(u,kDrive)); baseP.ratio=get(ix(u,kRatio)); baseP.thresholdDb=get(ix(u,kThreshold)); baseP.attackMs=get(ix(u,kAttack)); baseP.releaseMs=get(ix(u,kRelease));
+                baseP.distortionGainInDb=get(extraIx(u,0)); baseP.distortionGainOutDb=get(extraIx(u,1));
+                baseP.preVcfCutoffHz=get(extraIx(u,2)); baseP.preVcfQ=get(extraIx(u,3)); baseP.preVcfEnvDepth=get(extraIx(u,4));
+                baseP.postVcfCutoffHz=get(extraIx(u,5)); baseP.postVcfQ=get(extraIx(u,6)); baseP.postVcfEnvDepth=get(extraIx(u,7));
+                baseP.envelopeAttackMs=get(extraIx(u,8)); baseP.envelopeReleaseMs=get(extraIx(u,9)); baseP.distortionBypass=getBool(extraIx(u,10));
+                baseP.compGainDb=get(extraIx(u,11)); baseP.gateOffDb=get(extraIx(u,12)); baseP.gateOnDb=get(extraIx(u,13)); baseP.gateReleaseMs=get(extraIx(u,14));
+                baseP.pannerPhaseOpposed=getBool(extraIx(u,15)); baseP.sampleHoldHz=get(extraIx(u,16));
+                baseP.leftDelayMs=get(extraIx(u,17)); baseP.rightDelayMs=get(extraIx(u,18)); baseP.leftEchoMs=get(extraIx(u,19)); baseP.rightEchoMs=get(extraIx(u,20)); baseP.echoLevel=get(extraIx(u,21))*.01f;
+                baseP.bassFcHz=get(extraIx(u,22)); baseP.bassGainDb=get(extraIx(u,23)); baseP.trebleFcHz=get(extraIx(u,24)); baseP.trebleGainDb=get(extraIx(u,25)); baseP.inputTrimDb=get(extraIx(u,26));
                 trollfx::ModulationMatrix::Values base{},out{};
                 base[0]=logNorm(baseP.timeMs,.1f,10000); base[1]=(baseP.feedback+.92f)/1.84f; base[2]=baseP.mix; base[3]=logNorm(baseP.rateHz,.01f,8); base[4]=baseP.depthMs/30; base[5]=baseP.diffusion; base[6]=baseP.damping/.98f; base[7]=baseP.width; base[8]=(baseP.thresholdDb+96)/96; base[9]=(baseP.ratio-1)/39; base[10]=logNorm(baseP.attackMs,.05f,100); base[11]=logNorm(baseP.releaseMs,1,10000); base[12]=logNorm(baseP.cutoffHz,80,10000); base[13]=logNorm(get(ix(u,kDecay)),.2f,60); base[14]=(0.0f+24.0f)/36.0f;
                 engines_[u].setAlgorithm(algorithm(std::min(ai,9)));
