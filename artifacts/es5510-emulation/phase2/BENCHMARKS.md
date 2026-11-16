@@ -28,6 +28,30 @@ per-frame ES5510 execution schedule.
 | 48 kHz | long_1sec | 48,000 | MAME pump delay fixture (MEMSIZ initialized) | 13 | 0.5635 | 0.027050 s |
 | 48 kHz | long_1sec | 48,000 | 160-word no-op ceiling | 160 | 5.1989 | 0.249548 s |
 
+## Original TROLLfx effect programs
+
+The following additional timings use the final independent-gain stereo delay
+(19 instructions/frame) and modulated stereo chorus (11 instructions/frame).
+The benchmark loads each `ES5510_BUNDLE`; chorus includes per-frame host LFO
+GPR updates. Each short row is the median of 9 runs; each one-second row is the
+median of 3 runs. These are native x86 measurements, not ARM/Force estimates.
+
+| Rate | Span | Frames | Program | Instructions/frame | Median µs/frame | Median elapsed |
+|---:|---:|---:|---|---:|---:|---:|
+| 44.1 kHz | short_256 | 256 | TROLLfx feedback delay | 19 | 0.5332 | 0.000136 s |
+| 44.1 kHz | short_256 | 256 | TROLLfx modulated chorus | 11 | 0.4047 | 0.000104 s |
+| 44.1 kHz | long_1sec | 44,100 | TROLLfx feedback delay | 19 | 0.5036 | 0.022208 s |
+| 44.1 kHz | long_1sec | 44,100 | TROLLfx modulated chorus | 11 | 0.4298 | 0.018955 s |
+| 48 kHz | short_256 | 256 | TROLLfx feedback delay | 19 | 0.4504 | 0.000115 s |
+| 48 kHz | short_256 | 256 | TROLLfx modulated chorus | 11 | 0.3234 | 0.000083 s |
+| 48 kHz | long_1sec | 48,000 | TROLLfx feedback delay | 19 | 0.5021 | 0.024100 s |
+| 48 kHz | long_1sec | 48,000 | TROLLfx modulated chorus | 11 | 0.3357 | 0.016113 s |
+
+Full rows with repeat counts and the workload output are in
+`EFFECT_BENCHMARKS.csv`. The `160-word no-op ceiling` remains 4.5–5.3 us/frame
+on this desktop and is the instruction-count upper workload, not the actual
+cost of these effects.
+
 The pump fixture benchmark uses the corrected `gpr 244 0xff` MEMSIZ initialization;
 the prior zero-init delay-RAM results are invalid and excluded. This public MAME
 test program performs its fixed 7,440-frame summed delay. It is a useful delay-RAM
@@ -37,7 +61,7 @@ and native CSV data are retained in `NATIVE_BENCH_MATRIX.csv`.
 
 ## ARMv7 build
 
-The extended benchmark cross-compiles with Zig 0.17.1:
+The final renderer and benchmark, including bundle LFO scheduling, cross-compile with Zig 0.17.1:
 
 ```sh
 /tmp/trollfx-zig/ziglang/zig c++ \
@@ -47,9 +71,8 @@ The extended benchmark cross-compiles with Zig 0.17.1:
   -o artifacts/es5510-emulation/phase2/es5510-bench-armv7
 ```
 
-Result: PASS. ELF32 ARM EABI5 hard-float, Cortex-A17/ARMv7-A build. The
-stripped binary is in `es5510-bench-armv7`; SHA-256:
-`0a58c8ad34e25ccc3e6e402c8e61d57b907be8ff06b557f1960ce48bd213da13`.
+Result: PASS. ELF32 ARM EABI5 hard-float, Cortex-A17/ARMv7-A build. The stripped ARMv7 renderer and benchmark are in `phase2/armv7-testkit/`; exact
+hashes and package digest are in `PHASE2_RESULTS.txt`.
 
 No `qemu-arm` or Force SSH session was available, so the ARM executable was
 not run. ARMv7 execution cost, number of simultaneous engines per Force, and
@@ -69,8 +92,9 @@ Examples (put a bundle path after `--program` to execute that actual program):
 
 ```sh
 /tmp/es5510-bench --rate 44100 --frames 256 --block 64 \
-  --program experimental/emulation/programs/original_stereo_swap.esp
+  --program experimental/emulation/programs/original_stereo_feedback_delay.esp
 /tmp/es5510-bench --rate 44100 --frames 44100 --block 4096 \
-  --program experimental/emulation/programs/mame_pump_summed_delay_test.esp
-/tmp/es5510-bench --rate 48000 --frames 48000 --block 4096
+  --program experimental/emulation/programs/original_stereo_chorus.esp
+/tmp/es5510-bench --rate 48000 --frames 48000 --block 4096 \
+  --program experimental/emulation/programs/original_stereo_feedback_delay.esp
 ```

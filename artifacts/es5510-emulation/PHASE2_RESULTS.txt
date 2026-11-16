@@ -1,0 +1,133 @@
+TROLLfx ES5510 emulation — Phase 2 results
+Recorded: 2026-11-16 UTC
+Development branch: issue4-es5510-standalone
+
+SCOPE AND SOURCE
+----------------
+Base Issue #4 commit: 2ff745146645f8d4ebcef356983af4cbf4fa709a
+Pinned MAME source: 8be57cdc5f44ab830dff44c06dd39f24190742d4
+Processor adapter: experimental/emulation/mame_es5510_standalone.cpp
+MAME license: BSD-3-Clause; full notice remains in
+  experimental/emulation/THIRD_PARTY_NOTICES.md
+No MAME framework, Ensoniq firmware, ROM or factory effect program was used.
+Programs are original TROLLfx code. They are not DP/4-compatible claims.
+
+ORIGINAL ES5510 PROGRAMS
+------------------------
+Delay bundle: experimental/emulation/programs/original_stereo_feedback_delay.esp
+  SHA-256 b3edb0490fc1bd7463d16476df8d8e7f20210f522e7953aafe8224eb14f3738f
+  19 microinstruction words per frame; all delay, feedback, wet/dry mixing,
+  MACs and stereo output execute in ES5510 instructions. GPR40=feedback,
+  GPR41=wet, GPR42=dry (Q22). Default delay 250 ms, feedback 0.55, wet/dry
+  0.5. Independent maximum bank default 10 s, total stereo ring 882,000 words
+  at 44.1 kHz. MEMSIZ=0 (one address unit per 16-bit word).
+
+Chorus bundle: experimental/emulation/programs/original_stereo_chorus.esp
+  SHA-256 8d110bfc69c755eb05ea2f3af2cccdf8c41532a5eaf0c0f1ee7a6680948f66ad
+48 kHz bundles (same program structures, sample-rate-scaled delay offsets):
+  delay SHA-256 77049721e5a931b01eb3094534b28b27ab8ffd598562772a5676ecf1b2415a34
+  chorus SHA-256 949f048bec6b14a829843b1aa07d9d7fdd0aa4af605079068b8970f1f5955429
+  11 instruction words per frame; delay storage and audio mixing execute in
+  the emulator. Two `lfo_gpr` bundle records define opposite-phase 0.5 Hz host
+  sine updates to delay-offset GPR0/GPR1 (25 ms base, 5 ms depth); wet gain is
+  GPR40 (0.5). The LFO schedule is renderer/host supplied, not ESP code.
+
+Assembler: tools/es5510_asm.py. Readable source and parameter definitions:
+  experimental/emulation/programs/stereo_feedback_delay.asm
+  experimental/emulation/programs/stereo_chorus.asm
+  experimental/emulation/programs/PHASE2_README.md
+The assembler rejects stereo rings over the modeled 1M-word DRAM. A 10-second
+per-channel bank fits at 44.1 and 48 kHz; it does not fit at 96 kHz.
+
+AUDIO ARTIFACTS — 44.1 kHz STEREO 16-BIT PCM
+---------------------------------------------
+Input impulse: artifacts/es5510-emulation/phase2/stereo_input_impulse.wav
+  SHA-256 aa1f8085cfeb1de0364e08cadf43f0f0de0dd5ac152c2332576fffe4b7e48827
+Input musical source: artifacts/es5510-emulation/original_test_chord_input.wav
+  Three-second synthetic chord (132,300 frames); SHA-256
+  168f5f6be895f37d9be0a9df319caf49a5e29923ac05d17c9266449e1ad967c9
+
+Stereo feedback delay impulse:
+  artifacts/es5510-emulation/phase2/stereo_feedback_delay_impulse.wav
+  SHA-256 1d07f2056401d299cef55386018806c2e3b29c87ee6ad97b171247821ee55636
+  Direct first frame L/R=12,288/4,096; 250 ms wet echo L/R=12,288/4,096;
+  500 ms echo=6,758/2,252; later echoes decay at feedback 0.55. Four seconds,
+  peak 12,288/32,767, RMS 0.001038 full scale, zero clipped samples.
+Stereo feedback delay chord:
+  artifacts/es5510-emulation/phase2/stereo_feedback_delay_chord.wav
+  SHA-256 97295efb42b735db3feb1369ae15156da1bc6d46be8aa9039dcbf2827899e34e
+  Three seconds; peak 9,644/32,767, RMS 0.066192 full scale, L/R correlation
+  0.00231, zero clipped samples.
+
+Chorus impulse:
+  artifacts/es5510-emulation/phase2/stereo_chorus_impulse.wav
+  SHA-256 5ff7d6109e951d5e295aa47b35a4bd12724b1ed59a5b5a7bdf59cb5988d9a21d
+  First wet returns: L=12,288 at frame 1,120 (25.40 ms), R=4,096 at frame
+  1,085 (24.60 ms); direct frame L/R=24,576/8,192. Four seconds, peak
+  24,576/32,767, RMS 0.001488 full scale, zero clipped samples.
+Chorus chord:
+  artifacts/es5510-emulation/phase2/stereo_chorus_chord.wav
+  SHA-256 a6528c9f2a656acd16f99897d73d775623f9ad66db15a13383bb3300fa661d7f
+  Three seconds; peak 13,521/32,767, RMS 0.070723 full scale, L/R correlation
+  -0.00132, zero clipped samples. Rendering twice is byte-identical. Removing
+  both LFO records to make a fixed-delay version gives NRMSE=0.58946 against
+  the modulated output, confirming the GPR schedule changes rendered audio.
+
+Delay control isolation, generated with the same stereo impulse:
+  wet=0,dry=0.5: frame 0=(12,288,4,096); 250 ms=(0,0).
+  wet=0.5,dry=0: frame 0=(0,0); 250 ms=(12,288,4,096).
+  wet=0.5,dry=0, feedback=0.25: 500 ms left=3,072.
+  wet=0.5,dry=0, feedback=0.75: 500 ms left=9,216.
+These confirm wet, dry and feedback affect separate program paths.
+
+VALIDATION
+----------
+PASS: native strict C++17 builds (-O2 -Wall -Wextra -Wpedantic -Werror) of
+      engine smoke, source-derived vectors, renderer and benchmark.
+PASS: original stereo-swap smoke and MAME pump fixture baseline reproduced.
+PASS: deterministic MAME-source-derived ADD saturation/wrap, CCR, MAC and
+      skip vectors (`experimental/emulation/mame_source_vector_test.cpp`).
+      These are not a runtime MAME differential.
+PASS: assembler regenerated both checked-in default bundles byte-for-byte.
+PASS: regenerated all four final delay/chorus impulse/chord WAVs byte-for-byte.
+PASS: repeated chorus render is identical; delay feedback stable; no clipping
+      in the checked-in impulse/chord settings or tested parameter variants.
+PASS: 48 kHz `_48k` delay/chorus bundles render 48,000 impulse frames, with
+      12,000-frame delay and ~1,200-frame modulated chorus returns; no clipping.
+PASS: 48 kHz 10-second stereo ring assembles (960,000 words); 96 kHz 10-second
+      ring rejects because it exceeds 1M-word modeled DRAM.
+
+MAME reference limitation: `/tmp/mame-es5510` is pinned to the commit above,
+but is a sparse 5.2 MB source checkout without `src/emu`, build files or a MAME
+executable. A test-only executing differential could not be built. Tests are
+clearly marked source-derived vectors. See
+`experimental/emulation/MAME_SOURCE_VECTORS.md`.
+
+NATIVE PERFORMANCE — x86_64 INTEL CORE i7-10750H @ 2.60 GHz
+------------------------------------------------------------
+Optimized native benchmark, short=256 frames (median of 9), long=one second
+(median of 3), including per-frame host-LFO writes for chorus:
+  44.1 kHz: delay 19 words/frame, 0.5332 us/frame short / 0.5036 us/frame long.
+             chorus 11 words/frame, 0.4047 / 0.4298 us/frame.
+  48 kHz:   delay 19 words/frame, 0.4504 us/frame short / 0.5021 us/frame long.
+             chorus 11 words/frame, 0.3234 / 0.3357 us/frame.
+The 160-word no-op ceiling measured 4.49–5.29 us/frame on this desktop. No
+x86 result is used as an ARM estimate. Full runs: `phase2/BENCHMARKS.md` and
+`phase2/EFFECT_BENCHMARKS.csv`.
+
+ARMv7 BUILD AND PACKAGE
+-----------------------
+Cross-compiler: Zig 0.17.1; target arm-linux-gnueabihf.2.31, Cortex-A17,
+-O2, stripped. Both output binaries are ELF32 ARM EABI5 hard-float:
+  renderer SHA-256 7fed35436ba7f51e8bbf4f3b5151d5d877ad190729ca3ddb436e197d32d08c49
+  benchmark SHA-256 a684ecaa908fd24d2b666cc38abc0d3a4ca9b33a2bc24e8be239d461ccb4d823
+Package:
+  artifacts/es5510-emulation/phase2/es5510-phase2-armv7-testkit.zip
+  SHA-256 c7ff6784d7a10fa7c9342c89d4d68f0eec9be2f228e6231979c2c3f366b45eeb
+  Contains binaries, original 44.1/48 kHz delay/chorus source bundles, assembly
+  sources, assembler, test input WAVs, README and MAME BSD-3-Clause notice. No firmware or factory data.
+
+ARM runtime timing: NOT MEASURED. `qemu-arm` and an authorized Force SSH
+session were not available. Do not infer Force CPU capacity from desktop
+benchmarks. No VST was produced because the stated runtime-performance gate
+has not passed. Nothing was installed or deployed to Force.

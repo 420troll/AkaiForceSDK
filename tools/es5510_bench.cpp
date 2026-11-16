@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <fstream>
 #include <iomanip>
@@ -19,6 +20,11 @@ struct Bundle {
     std::vector<std::uint64_t> words;
     std::vector<std::pair<std::uint8_t, std::uint32_t>> registers;
     std::vector<std::pair<std::uint32_t, std::int16_t>> dram;
+    struct LfoGpr {
+        std::uint8_t reg;
+        double base, depth, rate, phase, minimum, maximum;
+    };
+    std::vector<LfoGpr> lfoGpr;
 };
 
 bool loadBundle(const std::string& path, Bundle& b) {
@@ -56,6 +62,16 @@ bool loadBundle(const std::string& path, Bundle& b) {
             int value = 0;
             if (!(in >> std::setbase(0) >> address >> value) || address >= MameES5510::kDramWords || value < -32768 || value > 32767) return false;
             b.dram.emplace_back(address, static_cast<std::int16_t>(value));
+        } else if (key == "lfo_gpr") {
+            unsigned reg = 0;
+            Bundle::LfoGpr lfo{};
+            if (!(in >> reg >> lfo.base >> lfo.depth >> lfo.rate >> lfo.phase >> lfo.minimum >> lfo.maximum) ||
+                reg >= 192 || !std::isfinite(lfo.base) || !std::isfinite(lfo.depth) ||
+                !std::isfinite(lfo.rate) || !std::isfinite(lfo.phase) ||
+                !std::isfinite(lfo.minimum) || !std::isfinite(lfo.maximum) ||
+                lfo.minimum < 0 || lfo.maximum < lfo.minimum || lfo.maximum > 0xffffff) return false;
+            lfo.reg = static_cast<std::uint8_t>(reg);
+            b.lfoGpr.push_back(lfo);
         } else if (key != "sample_rate") {
             return false;
         }
@@ -95,10 +111,16 @@ int run(const std::string& programPath, unsigned sampleRate, std::uint64_t frame
     std::array<std::int16_t, 6> input{};
     std::array<std::int16_t, 2> output{};
     std::int64_t checksum = 0;
+    constexpr double twoPi = 6.283185307179586476925286766559;
     const auto start = std::chrono::steady_clock::now();
     for (std::uint64_t base = 0; base < frames; base += blockFrames) {
         const auto end = std::min<std::uint64_t>(frames, base + blockFrames);
         for (std::uint64_t frame = base; frame < end; ++frame) {
+            for (const auto& lfo : bundle.lfoGpr) {
+                const double phase = twoPi * (lfo.rate * static_cast<double>(frame) / sampleRate + lfo.phase);
+                const double value = std::clamp(lfo.base + lfo.depth * std::sin(phase), lfo.minimum, lfo.maximum);
+                cpu.setRegister(lfo.reg, static_cast<std::uint32_t>(std::llround(value)));
+            }
             input = {};
             input[4] = static_cast<std::int16_t>(static_cast<int>(triangle(frame, 0)) - 24552);
             input[5] = static_cast<std::int16_t>(static_cast<int>(triangle(frame, 701)) - 24552);

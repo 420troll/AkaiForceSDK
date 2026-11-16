@@ -22,3 +22,7 @@ g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Werror \
 /tmp/es5510-test
 ```
 
+
+Phase 2 original programs, parameter controls, and renders are documented in
+`docs/HANDOFF_EMULATION_PHASE2.md` and `docs/ES5510_PROGRAM_CATALOG.md`; results
+and ARMv7 test kit are in `artifacts/es5510-emulation/PHASE2_RESULTS.txt`.

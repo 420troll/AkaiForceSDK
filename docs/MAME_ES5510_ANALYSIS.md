@@ -139,3 +139,26 @@ word. The earlier bundle omitted that init, left the standalone default shift
 at 24, and therefore did not validate the intended long delay. The bundle and
 render are corrected; the impulse now first appears at frame 7440 (the 7440
 sample delay encoded by the fixture). Do not use the superseded one-frame claim.
+
+
+## Phase 2 original-program findings (2026-11-16)
+
+Two TROLLfx-authored programs now execute through the standalone MAME-semantics
+engine: a 19-word/frame stereo feedback delay with independent feedback/wet/dry
+gains and an 11-word/frame host-modulated stereo chorus. Their original source,
+bundles and measurable WAVs are cataloged in `docs/ES5510_PROGRAM_CATALOG.md`
+and `artifacts/es5510-emulation/PHASE2_RESULTS.txt`. These are not factory
+programs.
+
+The program tests caught two important implementation hazards. First, MEMSIZ
+controls both address shift and mask; using `0xff` gives a 65,536-word span, so
+a larger stereo ring aliases even though the physical adapter allocates 1M
+words. The original programs set MEMSIZ to zero, use one raw address unit per
+word, and validate ring size against the 1M-word adapter capacity. Second, the
+MAC executes in parallel with every instruction: non-MAC A/B instructions
+must put their unused C/D fields on the non-writable constant register, and the
+END instruction also requires safe pipeline fields to avoid a cross-frame
+writeback. The assembler encodes these safeguards.
+
+The available test vectors remain source-derived, not a live MAME differential.
+See `experimental/emulation/MAME_SOURCE_VECTORS.md`.

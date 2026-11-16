@@ -1,5 +1,13 @@
 # Experimental ES5510 execution handoff
 
+> **Phase 2 update:** original instruction-level stereo feedback delay and
+> modulated chorus are now implemented and rendered. Read
+> [HANDOFF_EMULATION_PHASE2.md](HANDOFF_EMULATION_PHASE2.md),
+> [ES5510_PROGRAM_CATALOG.md](ES5510_PROGRAM_CATALOG.md), and
+> [PHASE2_RESULTS.txt](../artifacts/es5510-emulation/PHASE2_RESULTS.txt) for
+> current validated program/audio/performance results. The earlier one-frame
+> MAME fixture claim was corrected after adding MEMSIZ initialization.
+
 ## Stage: standalone instruction-to-audio harness
 
 This experimental path is separate from the native TROLLfx effects plugin.

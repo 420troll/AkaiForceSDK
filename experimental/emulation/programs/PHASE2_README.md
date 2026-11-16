@@ -14,9 +14,10 @@ python3 tools/es5510_asm.py chorus experimental/emulation/programs/original_ster
   --sample-rate 44100 --delay-ms 25 --max-delay-ms 10000 --depth-ms 5 --rate-hz 0.5 --wet 0.5
 ```
 
-The assembler supports the checked-in `MOV`, in-place `ADD`, DIL-to-GPR plus
-DIL MAC, DOL write, and END forms. It emits the `ES5510_BUNDLE 1` format used
-by the headless renderer. The engine runs 11 words per frame for these programs.
+The assembler supports the checked-in `MOV`, in-place `ADD`, register and
+DIL MAC, DOL write, and END forms. The checked-in `_48k` bundle variants use
+48 kHz delay offsets; the default bundles use 44.1 kHz. It emits the `ES5510_BUNDLE 1` format used
+by the headless renderer. The delay runs 19 words/frame; the chorus runs 11 words/frame.
 
 The bundles set `MEMSIZ` (special register 244) to zero: the ES5510 then uses
 one raw offset unit per 16-bit DRAM word. `DLength` is `ring_samples-1`; END
@@ -67,11 +68,9 @@ mix produce repeatable movement. This is not a self-running ESP LFO program.
 
 ## Reproducible audio examples
 
-`artifacts/es5510-emulation/phase2/` contains the earlier 11-word program
-examples. This follow-up wet/dry build uses a separate 19-word bundle and WAVs
-under `artifacts/es5510-emulation/phase2/wetdry/`, preserving the first-stage
-examples. That directory contains a 44.1 kHz impulse render and musical-input
-render for the independent-gain delay program. Musical input is the existing
+`artifacts/es5510-emulation/phase2/` contains the final delay and chorus
+impulse and musical-input renders. `phase2/wetdry/` mirrors the final 19-word
+delay WAVs used for wet/dry control isolation. Musical input is the existing
 three-second synthetic chord. Render again with:
 
 ```sh
@@ -90,13 +89,11 @@ wet=0 removes all echoes, dry=0 removes the frame-zero direct sample, and
 feedback 0.25 versus 0.75 changes the second echo from 3,072 to 9,216 counts
 on the left while leaving the first echo equal. The default 4-second impulse
 output and 3-second chord output are in
-`artifacts/es5510-emulation/phase2/wetdry/`. The previous 11-word examples
-remain available in the parent directory.
+`artifacts/es5510-emulation/phase2/`.
 
-For the default chorus impulse, modulated echoes begin near 1,085 and 1,120
-frames in the right and left channels (opposite phases), not the 250 ms values
-from the feedback-delay example. The default chorus has 25 ms nominal delay, 5 ms LFO depth, and
-opposite channel phase; the impulse first wet returns are approximately 25.4 ms
-left and 24.6 ms right. The LFO result differs from a fixed-offset chorus on
+For the default chorus impulse, modulated echoes begin near 1,120 frames left
+and 1,085 frames right (opposite phases). The default chorus has 25 ms nominal
+delay and 5 ms LFO depth; the impulse first wet returns are approximately
+25.4 ms left and 24.6 ms right. The LFO result differs from a fixed-offset chorus on
 the same chord input (normalized output difference 0.5895); rendering the same
 bundle twice is sample-identical.
