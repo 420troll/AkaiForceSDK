@@ -36,6 +36,7 @@ int main() {
     b=a; b.distortionGainInDb=30.0f; ok &= check(EffectAlgorithm::VCFDistortion,"VCF distortion drive");
     b=a; b.driveDb=36.0f; ok &= check(EffectAlgorithm::VCFDistortion,"separate clip drive");
     b=a; b.postVcfCutoffHz=800.0f; ok &= check(EffectAlgorithm::VCFDistortion,"post VCF cutoff");
+    b=a; b.preEqHighPassHz=800.0f; ok &= check(EffectAlgorithm::VCFDistortion,"pre-EQ high-pass cutoff");
     b=a; b.distortionBypass=true; ok &= check(EffectAlgorithm::VCFDistortion,"distortion bypass");
     b=a; b.compGainDb=12.0f; ok &= check(EffectAlgorithm::Compressor,"compressor makeup");
     b=a; b.gateOffDb=-24.0f; b.gateOnDb=-18.0f; ok &= check(EffectAlgorithm::Compressor,"compressor gate");
