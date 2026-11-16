@@ -1,0 +1,15 @@
+{
+  "kit": "cyan",
+  "pages": [
+    { "name": "ESP LAB",
+      "controls": [
+        { "param": "Time", "widget": "knob" },
+        { "param": "Depth", "widget": "knob" },
+        { "param": "Rate", "widget": "knob" },
+        { "param": "Feedback", "widget": "knob" },
+        { "param": "Cross Feedback", "widget": "switch" },
+        { "param": "Mode", "widget": "slider", "overlay": "menu" },
+        { "param": "Mix", "widget": "fader" }
+      ] }
+  ]
+}

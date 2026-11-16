@@ -1,0 +1,15 @@
+{
+  "name": "ESP Lab",
+  "manufacturer": "TROLLfx",
+  "version": "1.0.0",
+  "format": "vst2",
+  "kind": "effect",
+  "uid": "TfxE",
+  "numInputs": 2,
+  "numOutputs": 2,
+  "category": "Effect",
+  "file32": "VST/esp-lab-arm32.so",
+  "file64": "VST/esp-lab-arm64.so",
+  "description": "TROLLfx ESP Lab V0.1 stereo modulated delay, chorus and flanger.",
+  "license": "MIT"
+}
