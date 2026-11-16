@@ -84,6 +84,7 @@ private:
     float damp_[4]{};
     float filter_[16]{}, envelope_[2]{}, gateGain_ = 1.0f;
     float eqBass_[2]{}, eqTreble_[2]{}, heldPhase_ = 0.0f, holdPhase_ = 0.0f;
+    float compEqBass_[2]{}, compEqTreble_[2]{};
     std::size_t holdCounter_ = 0;
     DP4InspiredReverb reverb_{};
     // Storage is owned here to guarantee stable delay-line pointers.

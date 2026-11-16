@@ -39,7 +39,8 @@ void EffectsUnit::reset() noexcept {
     delayL_.clear(); delayR_.clear(); for(auto& d:tank_) d.clear();
     std::fill(damp_,damp_+4,0.0f); std::fill(filter_,filter_+16,0.0f);
     std::fill(envelope_,envelope_+2,0.0f); std::fill(eqBass_,eqBass_+2,0.0f);
-    std::fill(eqTreble_,eqTreble_+2,0.0f); gateGain_=1.0f; phase_=heldPhase_=holdPhase_=0.0f;
+    std::fill(eqTreble_,eqTreble_+2,0.0f); std::fill(compEqBass_,compEqBass_+2,0.0f);
+    std::fill(compEqTreble_,compEqTreble_+2,0.0f); gateGain_=1.0f; phase_=heldPhase_=holdPhase_=0.0f;
     holdCounter_=0; reverb_.reset();
 }
 void EffectsUnit::setAlgorithm(EffectAlgorithm a) noexcept { algorithm_=a; setParams(params_); }
@@ -185,8 +186,25 @@ void EffectsUnit::processCompressor(const float* l,const float* r,float* ol,floa
     const float rel=std::exp(-1.0f/(.001f*params_.releaseMs*sampleRate_));
     const float gateRel=std::exp(-1.0f/(.001f*params_.gateReleaseMs*sampleRate_));
     const float makeup=std::pow(10.0f,params_.compGainDb/20.0f);
+    const float trim=std::pow(10.0f,params_.inputTrimDb/20.0f);
+    // The same bounded shelves feed both the audio path and the detector. The
+    // second pair of states models the documented EQ sidechain path.
+    const float bassA=1.0f-std::exp(-2.0f*pi*std::min(params_.bassFcHz,sampleRate_*.45f)/sampleRate_);
+    const float trebleA=1.0f-std::exp(-2.0f*pi*std::min(params_.trebleFcHz,sampleRate_*.45f)/sampleRate_);
+    const float bassG=std::pow(10.0f,params_.bassGainDb/20.0f)-1.0f;
+    const float trebleG=std::pow(10.0f,params_.trebleGainDb/20.0f)-1.0f;
     for(std::size_t i=0;i<n;++i) {
-        const float peak=std::max(std::abs(l[i]),std::abs(r[i]));
+        float signal[2]{}, sidechain[2]{};
+        const float raw[2]={l[i]*trim,r[i]*trim};
+        for(int ch=0;ch<2;++ch) {
+            eqBass_[ch]+=bassA*(raw[ch]-eqBass_[ch]);
+            eqTreble_[ch]+=trebleA*(raw[ch]-eqTreble_[ch]);
+            signal[ch]=raw[ch]+bassG*eqBass_[ch]+trebleG*(raw[ch]-eqTreble_[ch]);
+            compEqBass_[ch]+=bassA*(raw[ch]-compEqBass_[ch]);
+            compEqTreble_[ch]+=trebleA*(raw[ch]-compEqTreble_[ch]);
+            sidechain[ch]=raw[ch]+bassG*compEqBass_[ch]+trebleG*(raw[ch]-compEqTreble_[ch]);
+        }
+        const float peak=std::max(std::abs(sidechain[0]),std::abs(sidechain[1]));
         const float c=peak>envelope_[0]?atk:rel; envelope_[0]=c*envelope_[0]+(1.0f-c)*peak;
         const float db=20.0f*std::log10(std::max(envelope_[0],1.0e-6f));
         const float threshold=std::pow(10.0f,params_.thresholdDb/20.0f);
@@ -197,7 +215,7 @@ void EffectsUnit::processCompressor(const float* l,const float* r,float* ol,floa
         const float target=desiredOpen?1.0f:0.0f;
         const float gc=target>gateGain_?atk:gateRel; gateGain_=gc*gateGain_+(1.0f-gc)*target;
         const float g=gain*gateGain_*makeup;
-        ol[i]=l[i]*g; or_[i]=r[i]*g;
+        ol[i]=signal[0]*g; or_[i]=signal[1]*g;
     }
 }
 

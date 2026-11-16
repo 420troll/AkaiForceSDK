@@ -39,6 +39,9 @@ int main() {
     b=a; b.distortionBypass=true; ok &= check(EffectAlgorithm::VCFDistortion,"distortion bypass");
     b=a; b.compGainDb=12.0f; ok &= check(EffectAlgorithm::Compressor,"compressor makeup");
     b=a; b.gateOffDb=-24.0f; b.gateOnDb=-18.0f; ok &= check(EffectAlgorithm::Compressor,"compressor gate");
+    b=a; b.bassGainDb=12.0f; ok &= check(EffectAlgorithm::Compressor,"compressor EQ bass/sidechain");
+    b=a; b.trebleGainDb=-12.0f; ok &= check(EffectAlgorithm::Compressor,"compressor EQ treble/sidechain");
+    b=a; b.inputTrimDb=-12.0f; ok &= check(EffectAlgorithm::Compressor,"compressor input trim");
     b=a; b.bassGainDb=12.0f; ok &= check(EffectAlgorithm::EQPannerDDL,"bass EQ");
     b=a; b.leftDelayMs=35.0f; ok &= check(EffectAlgorithm::EQPannerDDL,"left delay");
     b=a; b.pannerPhaseOpposed=true; b.rateHz=2.0f; b.mix=1.0f; ok &= check(EffectAlgorithm::EQPannerDDL,"stereo phase panning");
