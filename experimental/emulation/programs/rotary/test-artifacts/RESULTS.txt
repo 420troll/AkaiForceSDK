@@ -1,0 +1,16 @@
+Native strict build: PASS
+Flags: g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Werror
+Program: 40 48-bit ES5510 instructions; two one-pole stages per low band, complementary high band, separate DOL delay-bank writes, dynamic DIL reads, four gain MACs and stereo outputs
+Sample rate: 44,100 Hz; 2,048-sample ring bank per band
+Crossover test setting: 700 Hz, two cascaded one-pole filters
+Drum/low path RMS: 100 Hz=0.069298; 5 kHz=0.0014182; relative change=-33.7797 dB
+Horn/high path RMS: 100 Hz=0.0188809; 5 kHz=0.0715124; relative change=+11.5672 dB
+Independent speed trajectory RMS delta: horn changed=0.104868; drum changed=0.174341
+Acceleration-time trajectory RMS delta: 0.194652
+Four-second stereo demo channel correlation: 0.789311
+Rail clips in demo: 0
+Demo: rotary_dual_band_demo.wav, 44.1 kHz stereo, 16-bit, 4 seconds
+
+Verification is against the standalone MAME-semantics emulator only. No live
+MAME differential, ARMv7 execution benchmark, Force VST integration, or hardware
+listen is claimed.
