@@ -48,7 +48,7 @@
       {"param":"Algorithm","widget":"slider","overlay":"menu"},{"param":"Bypass","widget":"switch"}
     ]},
     {"name":"REVERB","controls":[
-      {"param":"Decay","widget":"knob"},{"param":"Pre-delay","widget":"knob"},
+      {"param":"Decay / Tap Length","widget":"knob"},{"param":"Pre-delay","widget":"knob"},
       {"param":"HF Damping","widget":"knob"},{"param":"Diffusion 1","widget":"knob"},{"param":"Diffusion 2","widget":"knob"},
       {"param":"Early Level","widget":"knob","visibleWhen":{"param":"Algorithm","choice":"ROOM"}},
       {"param":"Early Level","widget":"knob","visibleWhen":{"param":"Algorithm","choice":"HALL"}},

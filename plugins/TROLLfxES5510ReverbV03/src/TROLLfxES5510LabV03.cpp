@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <cstdio>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -36,7 +37,7 @@ public:
         addParam(mpc::floatParam("dry","Dry",0,100,0,"%",0));
         addParam(mpc::boolParam("bypass","Bypass",false));
         addParam(mpc::logParam("delay_ms","Time",1,10000,500,"ms",1));
-        addParam(mpc::floatParam("feedback","Delay Feedback",0,94,55,"%",0));
+        addParam(mpc::floatParam("feedback","Delay Feedback",0,99,55,"%",0));
         addParam(mpc::boolParam("ping_pong","Ping-Pong",false));
         addParam(mpc::boolParam("delay_sync","Sync",false));
         addParam(mpc::choiceParam("tempo_source","Tempo Source",{"HOST","INTERNAL"},0));
@@ -64,7 +65,7 @@ public:
         addParam(mpc::floatParam("rotary_width","Rotor Width",0,100,100,"%",0));
         addParam(mpc::floatParam("doppler_depth","Doppler",0,8,2,"ms",1));
         addParam(mpc::floatParam("drive","Rotor Drive",0,100,0,"%",0));
-        addParam(mpc::floatParam("decay","Decay",0.2f,20,1.8f,"s",2));
+        addParam(mpc::floatParam("decay","Decay / Tap Length",0.2f,20,1.8f,"s",2));
         addParam(mpc::floatParam("predelay","Pre-delay",0,500,13,"ms",1));
         addParam(mpc::floatParam("diffusion1","Diffusion 1",0,99,55,"%",0));
         addParam(mpc::floatParam("diffusion2","Diffusion 2",0,99,50,"%",0));
@@ -85,7 +86,7 @@ public:
         base[kAcceleration]=1;base[kDeceleration]=1.5f;base[kRotaryWidth]=100;base[kDoppler]=2;base[kDecay]=1.8f;base[kPredelay]=13;base[kDiffusion1]=55;base[kDiffusion2]=50;base[kEarlyLevel]=25;
         base[kGateAttack]=45;base[kGateHold]=100;base[kGateRelease]=300;base[kTriggerThreshold]=-30;base[kRetriggerThreshold]=-28;base[kRetrigger]=1;
         base[kDamping]=35;base[kTap1]=76;base[kTap2]=66;base[kTap3]=58;base[kTap4]=52;base[kTap5]=47;base[kTap6]=42;base[kTap7]=37;base[kTap8]=27;base[kTap9]=16;
-        const auto addPreset=[&](const char* name,int algorithm){auto values=base;values[kAlgorithm]=static_cast<float>(algorithm);addProgram(name,values);};
+        const auto addPreset=[&](const char* name,int algorithm){auto values=base;values[kAlgorithm]=static_cast<float>(algorithm);if(algorithm>=12)values[kDecay]=20.0f;addProgram(name,values);};
         addPreset("Stereo Tempo Delay",0);addPreset("Chorus",1);addPreset("Safe 12-Stage Phaser",2);addPreset("Motion Panner",3);addPreset("Dual-Band Rotary",4);
         addPreset("Small Plate",5);addPreset("Large Plate",6);addPreset("Room",7);addPreset("Hall",8);addPreset("Gated Reverb",9);addPreset("Reverse One Shot",10);addPreset("Reverse Retrigger",11);addPreset("NonLin 1 Transient",12);addPreset("NonLin 2 Bloom",13);addPreset("NonLin 3 Drum",14);
     }
@@ -137,6 +138,7 @@ public:
     }
     bool formatValue(int index,float plain,std::string& out) override {
         if(index==kTempoSource){out=plain<0.5f?(hostTempoSeen_.load(std::memory_order_relaxed)?"HOST":"HOST unavailable; Internal fallback"):"INTERNAL";return true;}
+        if(index==kDecay){const int algorithm=getInt(kAlgorithm);if(algorithm>=12){const float span=25.0f+75.0f*std::clamp((plain-0.2f)/19.8f,0.0f,1.0f);out=std::to_string(static_cast<int>(std::lround(span)))+"% taps";}else{char value[32];std::snprintf(value,sizeof(value),"%.2f s",plain);out=value;}return true;}
         return false;
     }
 private:

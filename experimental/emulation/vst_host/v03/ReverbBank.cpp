@@ -63,7 +63,8 @@ bool ReverbBank::setup(Mode mode) noexcept {
     e.leftTap=e.rightTap=e.bankSamples=0;e.writeLeft=e.writeRight=0;e.feedbackGpr=40;e.wetGpr=41;e.dryGpr=42;
     e.coefficient.fill(0.0f);e.coefficientGpr.fill(0);e.coefficientCount=0;e.envGpr=e.dampingGpr=0;
     e.tapLevelGpr.fill(0);e.tapLeftGpr.fill(0);e.tapRightGpr.fill(0);e.tapLeft.fill(0);e.tapRight.fill(0);e.defaultTapLevels.fill(0.0f);e.tapCount=0;
-    e.feedbackBase=0.65f;e.holdRemaining=0;e.envelope=0.0f;e.triggered=e.previousAbove=false;e.frames=0;
+    e.feedbackBase=0.65f;e.holdRemaining=0;e.envelope=0.0f;e.detector=0.0f;e.triggered=e.previousAbove=false;e.frames=0;
+    e.detectorRelease=std::exp(-1.0f/(0.006f*static_cast<float>(sampleRate_)));
     // Allocate each engine only for its longest required reflection/tap plus
     // the 500 ms maximum predelay. NonLin 2 alone needs the full 96k bank.
     std::uint32_t engineBank=32768;
@@ -124,16 +125,37 @@ bool ReverbBank::setup(Mode mode) noexcept {
 void ReverbBank::setControls(Mode mode,Engine& e,const Parameters& p) noexcept {
     const float wet=std::clamp(sane(p.wet,0.65f),0.0f,1.0f),dry=std::clamp(sane(p.dry,0.0f),0.0f,1.0f);
     const float decay=std::clamp(sane(p.decaySeconds,1.8f),0.2f,20.0f);
+    if(e.envGpr){
+        e.triggerLevel=std::pow(10.0f,std::clamp(sane(p.triggerDb,-32.0f),-96.0f,0.0f)/20.0f);
+        e.retriggerLevel=std::pow(10.0f,std::clamp(sane(p.retriggerDb,-28.0f),-96.0f,0.0f)/20.0f);
+        e.holdSamples=static_cast<std::uint64_t>(std::max(0.0f,sane(p.holdMs,80.0f))*sampleRate_/1000.0);
+        e.attackSamples=std::max<std::uint64_t>(1,static_cast<std::uint64_t>(std::max(1.0f,sane(p.attackMs,35.0f))*sampleRate_/1000.0));
+        e.releaseSamples=std::max<std::uint64_t>(1,static_cast<std::uint64_t>(std::max(1.0f,sane(p.releaseMs,240.0f))*sampleRate_/1000.0));
+    }
     const float pre=std::clamp(sane(p.predelayMs,0.0f),0.0f,500.0f)*static_cast<float>(sampleRate_/1000.0);
     const auto l=static_cast<std::uint32_t>(std::clamp(std::lround(e.leftTap+pre),1L,static_cast<long>(e.bankSamples-2)));
     const auto r=static_cast<std::uint32_t>(std::clamp(std::lround(e.rightTap+pre),1L,static_cast<long>(e.bankSamples-2)));
     e.cpu.setRegister(0,l);e.cpu.setRegister(1,e.bankSamples+r);
-    const float feedback=std::clamp(std::pow(0.001f,static_cast<float>(e.leftTap+e.rightTap)/(2.0f*static_cast<float>(sampleRate_)*decay)),0.0f,0.94f);
+    // This coefficient is the feedback-loop equivalent of requested decay.
+    // The old blanket 0.94 ceiling flattened long settings for plates/hall.
+    // Room's much shorter, single-diffuser loop is quantization-sensitive at
+    // the highest gains: compress its final interval to a measured 0.975 cap
+    // while keeping the mapping continuous and strictly increasing. The
+    // other feedback networks retain the 0..99% range.
+    float feedback=std::pow(0.001f,static_cast<float>(e.leftTap+e.rightTap)/(2.0f*static_cast<float>(sampleRate_)*decay));
+    if(mode==Mode::Room&&feedback>0.91f){const float t=std::clamp((feedback-0.91f)/0.08f,0.0f,1.0f);feedback=0.91f+0.065f*t;}
+    feedback=std::clamp(feedback,0.0f,0.99f);
     e.cpu.setRegister(e.feedbackGpr,q22(feedback));e.cpu.setRegister(e.wetGpr,q22(wet));e.cpu.setRegister(e.dryGpr,q22(dry));
     const float d1=std::clamp(sane(p.diffusion1,55.0f)/55.0f,0.0f,1.4f),d2=std::clamp(sane(p.diffusion2,50.0f)/50.0f,0.0f,1.4f);
     for(std::size_t i=0;i<e.coefficientCount;++i){float scale=((i/2)%2==0)?d1:d2;const float val=std::clamp(e.coefficient[i]*scale,-0.92f,0.92f);e.cpu.setRegister(e.coefficientGpr[i],q22Signed(val));}
     if(e.dampingGpr){const float amount=std::clamp(sane(p.damping,35.0f),0.0f,99.0f)/99.0f;const float cutoff=18000.0f*std::pow(0.0555556f,amount);const float alpha=1.0f-std::exp(-2.0f*static_cast<float>(kPi)*cutoff/static_cast<float>(sampleRate_));e.cpu.setRegister(e.dampingGpr,q22Signed(alpha));if(mode==Mode::Room||mode==Mode::Hall)e.cpu.setRegister(static_cast<std::uint8_t>(e.dampingGpr+1),q22Signed(alpha));}
-    if(e.tapCount){const float scale=std::clamp(decay/1.8f,0.25f,1.0f);for(std::size_t j=0;j<e.tapCount;++j){const auto tl=static_cast<std::uint32_t>(std::clamp(std::lround(e.tapLeft[j]*scale*sampleRate_/44100.0+pre),1L,static_cast<long>(e.bankSamples-2)));const auto tr=static_cast<std::uint32_t>(std::clamp(std::lround(e.tapRight[j]*scale*sampleRate_/44100.0+pre),1L,static_cast<long>(e.bankSamples-2)));e.cpu.setRegister(e.tapLeftGpr[j],tl);e.cpu.setRegister(e.tapRightGpr[j],e.bankSamples+tr);const float level=std::clamp(sane(p.tapLevels[j],e.defaultTapLevels[j]*100.0f),0.0f,99.0f)*0.001f;e.cpu.setRegister(e.tapLevelGpr[j],q22(level));}}
+    if(e.tapCount){
+        // NonLin is a one-pass tap schedule, not an RT60 feedback network.
+        // Map its complete legacy Decay range onto a useful 25..100% tap
+        // span; the old decay/1.8 mapping flattened every value above 1.8 s.
+        const float normalized=(decay-0.2f)/19.8f;
+        const float scale=0.25f+0.75f*std::clamp(normalized,0.0f,1.0f);
+        for(std::size_t j=0;j<e.tapCount;++j){const auto tl=static_cast<std::uint32_t>(std::clamp(std::lround(e.tapLeft[j]*scale*sampleRate_/44100.0+pre),1L,static_cast<long>(e.bankSamples-2)));const auto tr=static_cast<std::uint32_t>(std::clamp(std::lround(e.tapRight[j]*scale*sampleRate_/44100.0+pre),1L,static_cast<long>(e.bankSamples-2)));e.cpu.setRegister(e.tapLeftGpr[j],tl);e.cpu.setRegister(e.tapRightGpr[j],e.bankSamples+tr);const float level=std::clamp(sane(p.tapLevels[j],e.defaultTapLevels[j]*100.0f),0.0f,99.0f)*0.001f;e.cpu.setRegister(e.tapLevelGpr[j],q22(level));}}
     if(mode==Mode::Room||mode==Mode::Hall){
         e.cpu.setRegister(4,static_cast<std::uint32_t>(std::clamp(std::lround((0.007f+pre/sampleRate_)*sampleRate_),1L,static_cast<long>(e.bankSamples-2))));
         e.cpu.setRegister(5,e.bankSamples+static_cast<std::uint32_t>(std::clamp(std::lround((0.0099f+pre/sampleRate_)*sampleRate_),1L,static_cast<long>(e.bankSamples-2))));
@@ -144,24 +166,23 @@ void ReverbBank::setControls(Mode mode,Engine& e,const Parameters& p) noexcept {
 float ReverbBank::nextEnvelope(Mode mode,Engine& e,float inL,float inR,const Parameters& p) noexcept {
     if(mode!=Mode::Gated&&mode!=Mode::ReverseOneShot&&mode!=Mode::ReverseRetrigger)return 1.0f;
     const float peak=std::max(std::abs(inL),std::abs(inR));
-    const float threshold=std::pow(10.0f,std::clamp(sane(p.triggerDb,-32.0f),-96.0f,0.0f)/20.0f);
-    const bool above=peak>=threshold;
+    // Instant attack catches transients; a 6 ms peak hold/release and a 6 dB
+    // Schmitt band avoid opening/closing on successive samples near threshold.
+    e.detector=std::max(peak,e.detector*e.detectorRelease);
+    const float closeThreshold=e.triggerLevel*0.5011872f;
+    const bool above=e.previousAbove?e.detector>=closeThreshold:e.detector>=e.triggerLevel;
     const bool edge=above&&!e.previousAbove;
-    const auto hold=static_cast<std::uint64_t>(std::max(0.0f,sane(p.holdMs,80.0f))*sampleRate_/1000.0);
-    const auto attack=std::max<std::uint64_t>(1,static_cast<std::uint64_t>(std::max(1.0f,sane(p.attackMs,35.0f))*sampleRate_/1000.0));
-    const auto release=std::max<std::uint64_t>(1,static_cast<std::uint64_t>(std::max(1.0f,sane(p.releaseMs,240.0f))*sampleRate_/1000.0));
     if(mode==Mode::Gated){
-        if(above&&(edge||p.retrigger)){e.holdRemaining=hold;}
-        if(e.holdRemaining){--e.holdRemaining;e.envelope=std::min(1.0f,e.envelope+1.0f/static_cast<float>(attack));}
-        else e.envelope=std::max(0.0f,e.envelope-1.0f/static_cast<float>(release));
+        if(above&&(edge||p.retrigger)){e.holdRemaining=e.holdSamples;}
+        if(e.holdRemaining){--e.holdRemaining;e.envelope=std::min(1.0f,e.envelope+1.0f/static_cast<float>(e.attackSamples));}
+        else e.envelope=std::max(0.0f,e.envelope-1.0f/static_cast<float>(e.releaseSamples));
     }else{
-        const float retrigger=std::pow(10.0f,std::clamp(sane(p.retriggerDb,-28.0f),-96.0f,0.0f)/20.0f);
-        const bool trigger=above&&edge&&peak>=retrigger;
-        if(trigger&&(mode==Mode::ReverseRetrigger||!e.triggered)){e.triggered=true;e.envelope=0.0f;e.holdRemaining=hold;}
+        const bool trigger=above&&edge&&peak>=e.retriggerLevel;
+        if(trigger&&(mode==Mode::ReverseRetrigger||!e.triggered)){e.triggered=true;e.envelope=0.0f;e.holdRemaining=e.holdSamples;}
         if(e.triggered){
-            if(e.envelope<1.0f)e.envelope=std::min(1.0f,e.envelope+1.0f/static_cast<float>(attack));
+            if(e.envelope<1.0f)e.envelope=std::min(1.0f,e.envelope+1.0f/static_cast<float>(e.attackSamples));
             else if(e.holdRemaining)--e.holdRemaining;
-            else e.envelope=std::max(0.0f,e.envelope-1.0f/static_cast<float>(release));
+            else e.envelope=std::max(0.0f,e.envelope-1.0f/static_cast<float>(e.releaseSamples));
         }
     }
     e.previousAbove=above;

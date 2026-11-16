@@ -44,6 +44,9 @@ private:
         float feedbackBase=0.65f;
         std::uint64_t holdRemaining=0;
         float envelope=0.0f;
+        float detector=0.0f;
+        float triggerLevel=0.0251189f,retriggerLevel=0.0398107f,detectorRelease=0.0f;
+        std::uint64_t holdSamples=0,attackSamples=1,releaseSamples=1;
         bool triggered=false,previousAbove=false;
         std::uint64_t frames=0;
     };
