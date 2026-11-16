@@ -37,10 +37,15 @@ writing GPR0 when the next frame restarts at PC 0.
 
 `stereo_feedback_delay.asm` reads the prior left/right delay cells at PC 0/1,
 multiplies DIL by the Q22 feedback coefficient in GPR 40 at PC 2/3, adds the
-returns to the current dry inputs, writes each result to its bank, and outputs
-that sum. Its audible mix is therefore `dry + feedback * delayed`; it has no
-separate wet/output control yet. Feedback is limited to 0–0.94 by the assembler.
-The default 250 ms / 0.55 preset produces stable repeated echoes.
+returns to copies of the dry inputs, and writes the loop sums to the delay
+banks. Separate MAC passes scale the delayed and dry signals for output. The
+feedback loop is `input + feedback * delayed`. Output is independently
+`dry_gain * input + wet_gain * delayed`, with three distinct Q22 coefficients
+in GPRs 40 (feedback), 41 (wet), and 42 (dry). `--feedback` is limited to
+0–0.94; `--wet` and `--dry` each range from 0–1. Their sum can exceed unity,
+so high settings may clip. The default 250 ms / 0.55 feedback / 50% wet / 50%
+dry preset produces stable repeated echoes without clipping on the checked-in
+impulse or chord.
 
 ## Chorus behavior
 
@@ -62,8 +67,11 @@ mix produce repeatable movement. This is not a self-running ESP LFO program.
 
 ## Reproducible audio examples
 
-`artifacts/es5510-emulation/phase2/` contains a 44.1 kHz impulse input,
-impulse responses, and musical-input WAVs. Musical input is the existing
+`artifacts/es5510-emulation/phase2/` contains the earlier 11-word program
+examples. This follow-up wet/dry build uses a separate 19-word bundle and WAVs
+under `artifacts/es5510-emulation/phase2/wetdry/`, preserving the first-stage
+examples. That directory contains a 44.1 kHz impulse render and musical-input
+render for the independent-gain delay program. Musical input is the existing
 three-second synthetic chord. Render again with:
 
 ```sh
@@ -73,8 +81,21 @@ three-second synthetic chord. Render again with:
   artifacts/es5510-emulation/original_test_chord_input.wav /tmp/chorus.wav
 ```
 
-For the default delay impulse, 250 ms echoes repeat at frames 11,025, 22,050,
-33,075, etc. The default chorus has 25 ms nominal delay, 5 ms LFO depth, and
+For the wet/dry feedback-delay impulse, dry output is half-level at frame 0;
+wet echoes repeat at frames 11,025, 22,050, 33,075, etc. With 0.55 feedback,
+the first wet echo is half-level and each following echo is 0.55 times the
+previous. Wet=0 removes delayed output; dry=0 removes direct output. These
+settings affect separate MAC operations. Control-isolation renders confirm
+wet=0 removes all echoes, dry=0 removes the frame-zero direct sample, and
+feedback 0.25 versus 0.75 changes the second echo from 3,072 to 9,216 counts
+on the left while leaving the first echo equal. The default 4-second impulse
+output and 3-second chord output are in
+`artifacts/es5510-emulation/phase2/wetdry/`. The previous 11-word examples
+remain available in the parent directory.
+
+For the default chorus impulse, modulated echoes begin near 1,085 and 1,120
+frames in the right and left channels (opposite phases), not the 250 ms values
+from the feedback-delay example. The default chorus has 25 ms nominal delay, 5 ms LFO depth, and
 opposite channel phase; the impulse first wet returns are approximately 25.4 ms
 left and 24.6 ms right. The LFO result differs from a fixed-offset chorus on
 the same chord input (normalized output difference 0.5895); rendering the same

@@ -31,6 +31,13 @@ def parse(src):
             a,b,c,d,sel,ram=n
             # Source A is the in-place destination; source B is the addend.
             word=encode(a,b,255,255,0,sel,ram)
+        elif op=='MACREG_MOV' and len(n)==6:
+            a,b,c,d,sel,ram=n
+            if sel != SEL_REG: raise ValueError('MACREG_MOV must use register select 0')
+            word=encode(a,b,c,d,9,sel,ram)
+        elif op=='MACREG_NOP' and len(n)==3:
+            c,d,ram=n
+            word=encode(255,255,c,d,4,SEL_REG,ram)
         elif op=='MACDIL_MOV' and len(n)==5:
             a,c,d,sel,ram=n
             if sel != SEL_DIL_MAC_TO_GPR:
@@ -60,6 +67,7 @@ def main():
     ap.add_argument('--delay-ms',type=float,default=250.0)
     ap.add_argument('--max-delay-ms',type=float,default=10000.0)
     ap.add_argument('--feedback',type=float,default=0.55)
+    ap.add_argument('--dry',type=float,default=0.5)
     ap.add_argument('--wet',type=float,default=0.5)
     ap.add_argument('--depth-ms',type=float,default=5.0)
     ap.add_argument('--rate-hz',type=float,default=0.5)
@@ -68,6 +76,7 @@ def main():
     delay=max(1,round(a.delay_ms*a.sample_rate/1000))
     capacity=max(delay+2,round(a.max_delay_ms*a.sample_rate/1000))
     if a.kind=='delay' and not 0.0<=a.feedback<=0.94: ap.error('feedback must be in [0, 0.94]')
+    if a.kind=='delay' and (not 0.0<=a.wet<=1.0 or not 0.0<=a.dry<=1.0): ap.error('wet and dry gains must each be in [0, 1]')
     if a.kind=='chorus' and not 0.0<=a.wet<=1.0: ap.error('wet must be in [0, 1]')
     depth=max(0,round(a.depth_ms*a.sample_rate/1000))
     if a.kind=='chorus' and (depth>=delay or a.rate_hz<0): ap.error('chorus depth must be less than base delay and rate must be nonnegative')
@@ -81,16 +90,19 @@ def main():
     coef=round((a.feedback if a.kind=='delay' else a.wet)*(1<<22))
     source=Path(__file__).resolve().parents[1]/'experimental/emulation/programs'/('stereo_feedback_delay.asm' if a.kind=='delay' else 'stereo_chorus.asm')
     words=parse(source)
+    param_summary=(f'feedback={a.feedback} wet={a.wet} dry={a.dry}' if a.kind=='delay' else f'wet={a.wet} lfo={a.rate_hz}Hz depth={depth} samples')
     lines=[
         '# Original TROLLfx ES5510 microprogram. Not Ensoniq firmware or a factory effect.',
-        f'# Assembled from {source.name}; delay={delay} samples, max-bank={capacity}, coefficient={coef}.',
+        f'# Assembled from {source.name}; delay={delay} samples, max-bank={capacity}, {param_summary}.',
         f'# MEMSIZ=0 (1 offset unit/DRAM word), DLength={dlength} (ring={ring_samples} samples).',
         'ES5510_BUNDLE 1',f'sample_rate {a.sample_rate}','host_serial 0x20',
         'gpr 244 0',f'gpr 245 0x{dlength:x}','gpr 248 0',
         f'gpr 0 0x{read_l:x}',f'gpr 1 0x{read_r:x}',
-        f'gpr {6 if a.kind=="delay" else 4} 0',
-        f'gpr {7 if a.kind=="delay" else 5} 0x{bank:x}',f'gpr 40 0x{coef:x}',
+        f'gpr {8 if a.kind=="delay" else 4} 0',
+        f'gpr {9 if a.kind=="delay" else 5} 0x{bank:x}',f'gpr 40 0x{coef:x}',
     ]
+    if a.kind=='delay':
+        lines.extend((f'gpr 41 0x{round(a.wet*(1<<22)):x}',f'gpr 42 0x{round(a.dry*(1<<22)):x}'))
     if a.kind=='chorus':
         lines.extend((
             f'lfo_gpr 0 {delay} {depth} {a.rate_hz} 0 {delay-depth} {delay+depth}',
