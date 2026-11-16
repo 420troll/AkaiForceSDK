@@ -5,13 +5,30 @@
 - Branch: `issue8-es5510-v03-reverb-lab`
 - Plugin host name: `ES5510 NonLin Reverb V0.3`
 - Force folder: `TROLLfx - VST - ES5510 NonLin Reverb V0.3`
-- VST2 UID: `Tfx3` (separate from V0.1 `TfxX` and V0.2 `TfxV`)
+- VST2 UID: `TfxR` (separate from ESP Lab V0.3 `Tfx3`, ES5510 V0.1 `TfxX`, and V0.2 `TfxV`)
 - Plugin is one consolidated stereo effect containing delay, chorus, phaser,
   panner, rotary, three nonlinear tap reverbs, two plates, room, hall, gated,
   and two reverse modes. The old plugin folders are not build/runtime
   dependencies.
 - V0.3 has not been installed or tested on a Force. It remains alongside older
   installed prototypes until the user verifies this build.
+
+Repository UID audit (source manifests and matching wrapper identities):
+
+| Plugin | UID |
+|---|---|
+| TROLLfx ESP Lab | `TfxE` |
+| TROLLfx ESP Lab V0.2 | `Tfx2` |
+| TROLLfx ESP Lab V0.3 | `Tfx3` |
+| ES5510 Experimental V0.1 | `TfxX` |
+| ES5510 Expanded V0.2 | `TfxV` |
+| ES5510 NonLin Reverb V0.3 | `TfxR` |
+
+The six source-manifest UIDs are unique. `tools/package_es5510_v03.py` enforces
+uniqueness across `plugins/*/plugin.json` before packaging.
+The release-blocking duplicate with ESP Lab V0.3 (`Tfx3`) was the reason for
+changing this plugin's prior identity. The V0.3 wrapper, source manifest,
+packaged manifest, and ARM32/ARM64 binaries now all report `TfxR`.
 
 ## What the DSP does
 
@@ -161,9 +178,12 @@ benchmarks are not a measurement of this release.
 ## Package and installation
 
 - Package: `artifacts/es5510-emulation/v03/trollfx-es5510-v03-nonlinear-reverb-akai-force-armv7.zip`
-- SHA-256: `dc6697f9f650fab4df9b9b83a2f6630be4826888b207ece26cc8b3b637f347fc`
+- SHA-256: `7ce484e3d42eff95ff0ec32f974013b6b7e276a81238100b42b2c7513003ff95`
 - Folder inside ZIP: `TROLLfx - VST - ES5510 NonLin Reverb V0.3`
 - Package creator: `tools/package_es5510_v03.py` (fixed ZIP timestamps).
+- UID audit: source plugin manifests under `plugins/*/plugin.json` were checked;
+  `TfxR` is unique. The package script now fails if any source-manifest UID is
+  duplicated.
 
 Run on a computer to build the package:
 
@@ -222,6 +242,10 @@ Contributing milestones on this branch include phaser headroom repair
 
 - Consolidated V0.3 source, ARM32/ARM64 package, and results: `3033e1b3ddc2ec94b61e6bd03c2817d93bbc529e`.
 - Integrated 16-file demo render commit: `a06851fea609764000594a904ee3a7040255331f`.
+- UID collision repair, ARM binaries, and regenerated package/hash:
+  `8479bcc63cc33a4fa2596dc86edf9d736d75151a`.
+- This file's follow-up handoff revision is a docs-only commit after that
+  release commit.
 - The final GitHub branch HEAD also includes the docs-only commit that records
   these two full hashes. The package SHA above does not change with that edit.
 
