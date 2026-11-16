@@ -1,0 +1,27 @@
+# Original TROLLfx ES5510 microprogram. Not Ensoniq firmware or a factory effect.
+# Assembled from stereo_chorus.asm; delay=1102 samples, max-bank=441000, coefficient=2097152.
+# MEMSIZ=0 (1 offset unit/DRAM word), DLength=881999 (ring=882000 samples).
+ES5510_BUNDLE 1
+sample_rate 44100
+host_serial 0x20
+gpr 244 0
+gpr 245 0xd754f
+gpr 248 0
+gpr 0 0x44e
+gpr 1 0x6bef6
+gpr 4 0
+gpr 5 0x6baa8
+gpr 40 0x200000
+lfo_gpr 0 1102 220 0.5 0 882 1322
+lfo_gpr 1 442102 220 0.5 0.5 441882 442322
+instruction 0xffffef0a9000
+instruction 0xffffee0b9000
+instruction 0x280e000c9c30
+instruction 0x280f000d9c30
+instruction 0xffff0a009508
+instruction 0xffff0b009508
+instruction 0xffff0e0a0030
+instruction 0xffff0f0b0030
+instruction 0xffff0af19030
+instruction 0xffff0bf09030
+instruction 0xfffffffff000
