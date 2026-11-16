@@ -17,8 +17,9 @@ const std::array<MameES5510::Select, 16> MameES5510::kSelect = {{
     {Delay,Reg,Delay,Reg}, {Delay,Reg,Delay,Both}, {Delay,Both,Reg,Reg}, {Delay,Both,Delay,Reg}
 }};
 
-bool MameES5510::prepare() {
-    try { dram_.assign(kDramWords, 0); }
+bool MameES5510::prepare(std::size_t dramWords) {
+    if (dramWords == 0 || dramWords > kDramWords) return false;
+    try { dram_.assign(dramWords, 0); }
     catch (...) { return false; }
     reset();
     return true;
@@ -46,7 +47,7 @@ bool MameES5510::loadProgram(const std::uint64_t* words, std::size_t count) noex
 }
 
 bool MameES5510::setDramWord(std::uint32_t address, std::int16_t value) noexcept {
-    if (dram_.size() != kDramWords || address >= kDramWords) return false;
+    if (address >= dram_.size()) return false;
     dram_[address] = value;
     return true;
 }
@@ -206,7 +207,7 @@ std::uint32_t MameES5510::alu(std::uint8_t op, std::uint32_t a, std::uint32_t b,
 
 void MameES5510::processFrame(const std::array<std::int16_t, 6>& inputs,
                               std::array<std::int16_t, 2>& outputs) noexcept {
-    if (dram_.size() != kDramWords) { outputs = {}; return; }
+    if (dram_.empty()) { outputs = {}; return; }
     for (unsigned port=0; port<3; ++port) {
         if ((hostSerial_ & (0x04u << port)) == 0) {
             serial_[port*2]=inputs[port*2]; serial_[port*2+1]=inputs[port*2+1];
@@ -222,7 +223,10 @@ void MameES5510::executeOneFrame() noexcept {
     for (std::size_t pc=0; pc<kInstructionCount; ++pc) {
         const std::uint64_t instr=instructions_[pc];
         ramPP_=ramP_; ramP_=ram_;
-        if (ramPP_.cycle != RamWrite) dil_ = ramPP_.io ? 0 : dram_[static_cast<std::size_t>(ramPP_.address)&(kDramWords-1)];
+        if (ramPP_.cycle != RamWrite) {
+            const auto address = static_cast<std::size_t>(ramPP_.address) & (kDramWords - 1);
+            dil_ = (ramPP_.io || address >= dram_.size()) ? 0 : dram_[address];
+        }
         const std::uint8_t ramControl=static_cast<std::uint8_t>((instr>>3)&7u);
         const std::uint8_t ramAccess=ramControl==0||ramControl==1||ramControl==5?0:
             ramControl==2||ramControl==3?1:ramControl==4?2:3;
@@ -272,7 +276,10 @@ void MameES5510::executeOneFrame() noexcept {
             else { alu_.aValue=alu_.src==Reg?static_cast<std::int32_t>(readReg(alu_.aReg)):static_cast<std::int32_t>(static_cast<std::uint16_t>(dil_))<<8; alu_.bValue=static_cast<std::int32_t>(readReg(alu_.bReg)); }
         }
         if(ramP_.cycle!=RamRead) {
-            if(ramP_.cycle==RamWrite&&!ramP_.io&&dolCount_>0) dram_[static_cast<std::size_t>(ramP_.address)&(kDramWords-1)]=dol_[0];
+            if (ramP_.cycle == RamWrite && !ramP_.io && dolCount_ > 0) {
+                const auto address = static_cast<std::size_t>(ramP_.address) & (kDramWords - 1);
+                if (address < dram_.size()) dram_[address] = dol_[0];
+            }
             ejectDol();
         }
         ++instructionsExecuted_;

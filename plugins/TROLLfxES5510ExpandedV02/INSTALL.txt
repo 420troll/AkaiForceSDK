@@ -1,0 +1,53 @@
+TROLLfx ES5510 Expanded V0.2 — Akai Force ARMv7
+================================================
+
+Plugin UID: TfxV. It installs as a separate folder and does not replace V0.1
+(UID TfxX).
+
+PREPARE
+-------
+1. Copy this ZIP to the Force SSD or another computer-readable drive.
+2. On Force, inspect the destination mount flags before executing anything:
+
+   grep -E ' /media/SSD250g ' /proc/mounts
+
+   If the options include `noexec`, stop and use another supported plugin
+   location or ask for platform-specific advice. Do not change mount settings
+   persistently to install this package.
+3. Confirm the Force is not running a live project that depends on a plugin
+   rescan, and save the project.
+
+INSTALL (POSIX sh)
+-----------------
+Run from the directory containing this ZIP. The commands intentionally refuse
+to merge with or overwrite an existing V0.2 directory:
+
+   DEST='/media/SSD250g/VST2 Plugins'
+   PLUGIN='TROLLfx - VST - ES5510 Expanded V0.2'
+   mkdir -p "$DEST"
+   test ! -e "$DEST/$PLUGIN" || { echo "Refusing to overwrite $DEST/$PLUGIN"; exit 1; }
+   unzip -n 'trollfx-es5510-expanded-v0.2-akai-force-armv7.zip' -d /tmp/trollfx-v02-install
+   cp -R "/tmp/trollfx-v02-install/$PLUGIN" "$DEST/"
+   test -f "$DEST/$PLUGIN/VST/es5510-expanded-v02-arm32.so"
+   rm -rf /tmp/trollfx-v02-install
+
+The SDK package folder name must remain exactly as shown. Keep the archive
+available to verify its SHA-256 before extraction. Use the checksum in
+`docs/HANDOFF_ES5510_MODFX.md`.
+
+SCAN
+----
+Enable External Plugin Support in the Force's plugin/enhancement settings, then
+restart the Force so its external VST2 scanner can discover the new UID. The
+effect should appear as “ES5510 Expanded V0.2” by TROLLfx. Add it as a stereo
+insert, save, and verify each mode, parameter changes, state recall and CPU
+load before using it in a live set. This package has not been installed or
+hardware-tested by the developer.
+
+ROLLBACK
+--------
+Remove only:
+
+   /media/SSD250g/VST2 Plugins/TROLLfx - VST - ES5510 Expanded V0.2
+
+Then restart/rescan. Do not remove the V0.1 folder.

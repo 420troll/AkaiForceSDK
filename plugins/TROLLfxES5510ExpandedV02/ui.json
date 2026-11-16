@@ -1,0 +1,76 @@
+{
+  "kit": { "theme": "amber", "accent": "ffe4a044" },
+  "style": {
+    "background": "ff17191b", "accent": "ffe4a044",
+    "text": "fff5e8cd", "muted": "ff9a927f"
+  },
+  "pages": [
+    { "name": "DELAY", "controls": [
+      { "param": "Time", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"DELAY"} },
+      { "param": "Delay Feedback", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"DELAY"} },
+      { "param": "Wet", "widget": "fader", "visibleWhen": {"param":"Algorithm","choice":"DELAY"} },
+      { "param": "Dry", "widget": "fader", "visibleWhen": {"param":"Algorithm","choice":"DELAY"} },
+      { "param": "Ping-Pong", "widget": "switch", "visibleWhen": {"param":"Algorithm","choice":"DELAY"} },
+      { "param": "Sync", "widget": "switch", "visibleWhen": {"param":"Algorithm","choice":"DELAY"} },
+      { "param": "Tempo Source", "widget": "switch", "visibleWhen": {"param":"Algorithm","choice":"DELAY"} },
+      { "param": "Division", "widget": "slider", "overlay": "menu", "visibleWhen": {"param":"Algorithm","choice":"DELAY"} },
+      { "param": "Internal BPM", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"DELAY"} },
+      { "widget": "empty" }, { "widget": "empty" }, { "widget": "empty" },
+      { "widget": "empty" }, { "widget": "empty" },
+      { "param": "Algorithm", "widget": "slider", "overlay": "menu" },
+      { "param": "Bypass", "widget": "switch" }
+    ]},
+    { "name": "CHORUS", "controls": [
+      { "param": "Chorus Rate", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"CHORUS"} },
+      { "param": "Chorus Depth", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"CHORUS"} },
+      { "param": "Wet", "widget": "fader", "visibleWhen": {"param":"Algorithm","choice":"CHORUS"} },
+      { "widget": "empty" }, { "widget": "empty" }, { "widget": "empty" },
+      { "widget": "empty" }, { "widget": "empty" }, { "widget": "empty" }, { "widget": "empty" },
+      { "param": "Algorithm", "widget": "slider", "overlay": "menu" },
+      { "param": "Bypass", "widget": "switch" }
+    ]},
+    { "name": "PHASER", "controls": [
+      { "param": "Center", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"PHASER"} },
+      { "param": "Phaser Rate", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"PHASER"} },
+      { "param": "Phaser Depth", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"PHASER"} },
+      { "param": "Stereo Spread", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"PHASER"} },
+      { "param": "Phaser Feedback", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"PHASER"} },
+      { "param": "Wet", "widget": "fader", "visibleWhen": {"param":"Algorithm","choice":"PHASER"} },
+      { "param": "Dry", "widget": "fader", "visibleWhen": {"param":"Algorithm","choice":"PHASER"} },
+      { "widget": "empty" }, { "widget": "empty" }, { "widget": "empty" },
+      { "param": "Algorithm", "widget": "slider", "overlay": "menu" },
+      { "param": "Bypass", "widget": "switch" }
+    ]},
+    { "name": "PANNER", "controls": [
+      { "param": "Position", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"PANNER"} },
+      { "param": "Width", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"PANNER"} },
+      { "param": "Motion", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"PANNER"} },
+      { "param": "Pan Rate", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"PANNER"} },
+      { "param": "Waveform", "widget": "switch", "visibleWhen": {"param":"Algorithm","choice":"PANNER"} },
+      { "param": "Direction", "widget": "switch", "visibleWhen": {"param":"Algorithm","choice":"PANNER"} },
+      { "param": "Clock Sync", "widget": "switch", "visibleWhen": {"param":"Algorithm","choice":"PANNER"} },
+      { "param": "Tempo Source", "widget": "switch", "visibleWhen": {"param":"Algorithm","choice":"PANNER"} },
+      { "param": "Division", "widget": "slider", "overlay": "menu", "visibleWhen": {"param":"Algorithm","choice":"PANNER"} },
+      { "param": "Internal BPM", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"PANNER"} },
+      { "param": "Wet", "widget": "fader", "visibleWhen": {"param":"Algorithm","choice":"PANNER"} },
+      { "param": "Dry", "widget": "fader", "visibleWhen": {"param":"Algorithm","choice":"PANNER"} },
+      { "param": "Algorithm", "widget": "slider", "overlay": "menu" },
+      { "param": "Bypass", "widget": "switch" }
+    ]},
+    { "name": "ROTARY", "controls": [
+      { "param": "Speed", "widget": "switch", "visibleWhen": {"param":"Algorithm","choice":"ROTARY"} },
+      { "param": "Horn Speed", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"ROTARY"} },
+      { "param": "Drum Speed", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"ROTARY"} },
+      { "param": "Acceleration", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"ROTARY"} },
+      { "param": "Deceleration", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"ROTARY"} },
+      { "param": "Stereo Width", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"ROTARY"} },
+      { "param": "Doppler", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"ROTARY"} },
+      { "param": "Input Drive", "widget": "knob", "visibleWhen": {"param":"Algorithm","choice":"ROTARY"} },
+      { "param": "Wet", "widget": "fader", "visibleWhen": {"param":"Algorithm","choice":"ROTARY"} },
+      { "param": "Dry", "widget": "fader", "visibleWhen": {"param":"Algorithm","choice":"ROTARY"} },
+      { "widget": "empty" }, { "widget": "empty" },
+      { "param": "Algorithm", "widget": "slider", "overlay": "menu" },
+      { "param": "Bypass", "widget": "switch" }
+    ]}
+  ]
+}

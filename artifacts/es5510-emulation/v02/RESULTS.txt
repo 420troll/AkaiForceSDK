@@ -1,0 +1,56 @@
+TROLLfx ES5510 Expanded V0.2 build and render results
+====================================================
+
+Build
+-----
+Official Akai MPC plugin builder SDK commit:
+febd2ca5bd9eb16c4a412837196e145566bc981b
+Zig: 0.17.1
+Native: PASS, 2.8 MB
+ARMv7: PASS, 235 KB, VSTPluginMain exported, maximum GLIBC 2.27
+ARM64: PASS, 275 KB
+SDK strict validator: PASS, 0 errors, 0 warnings
+Plugin UID: TfxV
+
+Native processor smoke
+----------------------
+PASS: all five modes, ping-pong, bypass, tempo, finite/nonzero output.
+PASS: delay Sync OFF sample-identical to V0.1 for 8,192 frames at 44.1/48 kHz;
+maximum float delta 0.
+
+SDK host simulation
+-------------------
+PASS at 44.1 and 48 kHz with declared blocks 32, 64, 96, 128, 192, 256, 512.
+14 runs; each completed with zero warnings and failures. Checks covered load,
+render, in-place process, parameter changes, state chunk restore, silence,
+finite output and no denormals. Desktop only.
+
+Program evidence
+----------------
+Phaser: 131 instruction words, 12 allpass stages/channel. Measured notches:
+484.841 Hz for 500 Hz target (-29.543 dB coarse); 2001.56 Hz for 2 kHz
+target (-61.218 dB coarse). Exact center responses -85.778/-86.265 dB.
+Feedback +/-0.85 test did not clip.
+
+Rotary: 40 instruction words, separate low/high processing with 700 Hz
+two-one-pole crossover. 100 Hz low-path RMS 0.069298 versus 5 kHz 0.001418;
+100 Hz high-path RMS 0.018880 versus 5 kHz 0.071512. Horn/drum schedules and
+acceleration tests changed output; no clipped samples.
+
+Spatial test: PASS, 17-word matrix panner and 19-word cross-coupled delay;
+center, mono, pan, width and alternating echo timing checks.
+
+Six 44.1 kHz stereo four-second WAVs rendered by the ES5510 processor. All
+contain nonzero audio and zero clipped samples. This is not hardware testing.
+
+Package
+-------
+artifacts/es5510-emulation/v02/trollfx-es5510-expanded-v0.2-akai-force-armv7.zip
+SHA-256 e409b080817256a17867734feb8b1593c4e6c6d500bceb5edf66d5c5ac14e29e
+
+Limitations
+-----------
+No V0.2 ARM runtime measurement or Force plugin test. Host BPM transport support
+on Force remains unverified. Inactive program tails pause while not selected.
+Rotary cabinet input is mono; its input drive and speed inertia are host-side
+approximations. No historical Ensoniq/Waveboy program is bundled or emulated.

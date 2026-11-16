@@ -43,7 +43,7 @@ The skin has only been SDK-generated and host-validated, not viewed on a Force. 
 ## Package
 
 - Path: `artifacts/es5510-emulation/vst-v01/trollfx-es5510-experimental-v0.1-akai-force-armv7.zip`
-- SHA-256: `f4562ff61a8d4b0c46a8f78038da44717db1dceea1dd725393ea662769641bf9`
+- SHA-256: `94ba99191ea328b40248750176497ddccf43bc32b8b6054da8abd8c7e3fe0449`
 - Contains the ARM32 plugin, optional ARM64 plugin, `plugin.json`, `version.xml`, generated `Plugin Skins/TUI.json` and `Q-Links.json`, skin assets, installation instructions and the MAME license notice.
 - Package creator: `tools/package_es5510_vst.py`; archive member timestamps are fixed for repeatable packaging.
 

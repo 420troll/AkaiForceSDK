@@ -48,3 +48,23 @@ The source-derived CPU vectors are in
 `experimental/emulation/MAME_SOURCE_VECTORS.md`; they are not a runtime
 MAME-vs-adapter differential. No standalone reverb program or experimental VST
 is included in this phase.
+
+## Expanded V0.2 programs
+
+These programs are original TROLLfx ES5510 experiments included by the
+separately identified V0.2 plugin (`TfxV`). They use the same MAME-derived
+standalone execution core. Host-computed control schedules are called out;
+they do not replace ES5510 audio execution.
+
+| Program | Words | Audio structure | Host-side control work | Verification |
+|---|---:|---|---|---|
+| `phaser_12stage` | 131 | Twelve cascaded first-order allpass sections per channel, feedback/regeneration | LFO computes center-frequency coefficients, updated every eight frames; stereo spread offsets channel coefficients | Frequency sweeps found moving notches near 500 Hz and 2 kHz; signed feedback tested without clipping at +/-0.85. |
+| `panner_stereo` | 17 | Four-gain stereo matrix in ES5510 multiply/add operations | Motion LFO and position/width gains written to GPRs | Center, mono, pan, width and motion checks passed. |
+| `stereo_pingpong_feedback_delay` | 19 | Stereo delay RAM with cross-coupled feedback | Delay time and feedback gain GPR updates | Impulse checks verified alternating left/right echoes. |
+| `rotary_2band` | 40 | Two cascaded one-pole low-pass stages and complementary high band; separate moving taps and stereo gain coefficients | Horn/drum LFO trajectories, acceleration/deceleration, input drive and control gains | Band separation, separate rotor rates, ramp response and unclipped test output verified. Cabinet path is mono. |
+
+Tempo-sync delay uses the original 19-word stereo delay program with host-side
+GPR delay addressing. Sync OFF is sample-identical to V0.1 at 44.1/48 kHz in
+the adapter regression. See `docs/HANDOFF_ES5510_MODFX.md` for build/test
+records, WAV files, package hash, and the distinction between verified code
+behavior and unmeasured Force runtime behavior.

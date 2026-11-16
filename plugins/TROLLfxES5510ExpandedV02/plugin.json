@@ -1,0 +1,16 @@
+{
+  "name": "ES5510 Expanded V0.2",
+  "manufacturer": "TROLLfx",
+  "version": "0.2.0",
+  "format": "vst2",
+  "kind": "effect",
+  "uid": "TfxV",
+  "numInputs": 2,
+  "numOutputs": 2,
+  "category": "Effect",
+  "file32": "VST/es5510-expanded-v02-arm32.so",
+  "file64": "VST/es5510-expanded-v02-arm64.so",
+  "description": "ES5510 delay, tempo delay, chorus, phaser, stereo panner, ping-pong and dual-band rotary experiments.",
+  "author": "TROLLfx",
+  "license": "BSD-3-Clause (MAME-derived ES5510 core)"
+}

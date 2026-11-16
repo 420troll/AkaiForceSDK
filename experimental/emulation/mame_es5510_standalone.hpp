@@ -27,7 +27,7 @@ public:
         kFlagV = 0x20, kFlagLt = 0x10, kFlagZ = 0x08,
         kFlagNot = 0x04, kFlagMask = 0xf8;
 
-    bool prepare();
+    bool prepare(std::size_t dramWords = kDramWords);
     void reset() noexcept;
     bool loadProgram(const std::uint64_t* words, std::size_t count) noexcept;
     bool setDramWord(std::uint32_t address, std::int16_t value) noexcept;
