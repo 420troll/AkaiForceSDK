@@ -1,0 +1,23 @@
+# BSD-3-Clause-derived test bundle from MAME's PUMP_REPLACE_ESP_PROGRAM
+# fixture in src/devices/sound/esqpump.h at
+# 8be57cdc5f44ab830dff44c06dd39f24190742d4. Not factory Ensoniq microcode.
+# Sums MAME pump stereo inputs, writes/reads delay RAM, returns processed stereo.
+ES5510_BUNDLE 1
+sample_rate 44100
+host_serial 0x20
+gpr 6 0
+gpr 7 0x100
+gpr 245 0x1d0f00
+instruction 0xffffeaa09000
+instruction 0xffffeba00000
+instruction 0xffffeca00000
+instruction 0xffffeda00000
+instruction 0xffffeea00000
+instruction 0xffffefa00000
+instruction 0xffffa0a09508
+instruction 0xffff00a19928
+instruction 0xffffa1f09000
+instruction 0xffffa1f19000
+instruction 0xffffffff0000
+instruction 0xffffffff0000
+instruction 0xfffffffff000
