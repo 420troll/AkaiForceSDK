@@ -55,7 +55,7 @@ OVERLAYS = ("knob", "menu")
 POLARITIES = ("auto", "unipolar", "bipolar")
 CONTROL_KEYS = ("param", "widget", "visibleWhen", "text", "overlay", "polarity")
 PAGE_KEYS = ("name", "controls")
-UI_KEYS = ("pages", "style", "kit", "knobImage", "knobFrames")
+UI_KEYS = ("pages", "style", "kit", "knobImage", "knobFrames", "backgroundImage")
 KIT_KEYS = ("theme", "accent")
 KIT_WIDGETS = ("knob", "fader", "switch")
 MAX_SWITCH_CHOICES = 4
@@ -391,7 +391,10 @@ def load_ui(path, table):
         kit = {"theme": "mpc-red", "accent": style["accent"] if "accent" in data.get("style", {}) else None}
     elif kit is not None and not uses_kit:
         print('gen_ui: NOTE: "kit" is set but no control uses "knob", "fader" or "switch"; nothing from the kit is drawn.')
-    return pages, style, knob_image, frames, kit
+    background_image = data.get("backgroundImage")
+    if background_image is not None and (not isinstance(background_image, str) or not background_image.strip() or os.path.basename(background_image) != background_image):
+        fail(path, '"backgroundImage" must be a file name in the project assets/ folder')
+    return pages, style, knob_image, frames, kit, background_image
 
 
 def parse_kit(spec, path, accent_in_style, style):
@@ -756,13 +759,30 @@ def referenced_images(value, acc):
     return acc
 
 
+def apply_background_image(value, filename):
+    """Bind one project asset as the focused/unfocused tab background image."""
+    if not filename:
+        return
+    if isinstance(value, Obj):
+        for key, child in value:
+            if key == "backgroundData" and isinstance(child, Obj):
+                for side, side_data in child:
+                    if side in ("focussed", "unfocussed") and isinstance(side_data, Obj):
+                        side_data[:] = [(k, filename if k == "image" else v) for k, v in side_data]
+            else:
+                apply_background_image(child, filename)
+    elif isinstance(value, (list, tuple)):
+        for child in value:
+            apply_background_image(child, filename)
+
+
 def generate(params_path, ui_path, out_dir, assets_dir=None, quiet=False, kit_cache=None):
     params = load_params(params_path)
     table = ParamTable(params)
     if ui_path:
-        pages, style, knob_image, frames, kit = load_ui(ui_path, table)
+        pages, style, knob_image, frames, kit, background_image = load_ui(ui_path, table)
     else:
-        pages, style, knob_image, frames, kit = auto_pages(params), dict(DEFAULT_STYLE), None, 127, None
+        pages, style, knob_image, frames, kit, background_image = auto_pages(params), dict(DEFAULT_STYLE), None, 127, None, None
     if knob_image:
         knob_image = os.path.basename(knob_image)
         if assets_dir and not os.path.isfile(os.path.join(assets_dir, knob_image)):
@@ -774,6 +794,7 @@ def generate(params_path, ui_path, out_dir, assets_dir=None, quiet=False, kit_ca
     os.makedirs(out_dir, exist_ok=True)
     kit_dir, kit_assets = (kit_dir_for(kit, kit_cache, out_dir) if kit else (None, {}))
     tui = build_tui(pages, params, style, knob_image, frames, kit_assets)
+    apply_background_image(tui, background_image)
     qlinks = build_qlinks(pages, params)
     if kit_dir and os.path.abspath(kit_dir) != os.path.abspath(out_dir):
         for img in sorted(referenced_images(tui, set())):
