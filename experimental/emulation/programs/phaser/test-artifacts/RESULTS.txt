@@ -1,0 +1,13 @@
+Native strict build: PASS
+Flags: g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Werror
+Program: 131 48-bit instructions; 12 first-order allpass sections/channel
+Sample rate: 44,100 Hz
+Static response, center=500 Hz: deepest logarithmic-sweep notch near 484.841 Hz, -29.543 dB; exact-center measured -85.778 dB
+Static response, center=2,000 Hz: deepest logarithmic-sweep notch near 2,001.56 Hz, -61.2175 dB; exact-center measured -86.2652 dB
+Feedback: +0.85 and -0.85, each two seconds after impulse; 0 rail clips
+Stereo-motion demo channel correlation: 0.195985 (0.25-octave right coefficient spread)
+WAV: phaser_center_sweep.wav, 4 seconds, 44.1 kHz stereo, host 65% wet / 35% dry
+
+These results test the standalone MAME-semantics emulator, not live MAME or
+Force hardware. The phase shifting, feedback and serial output are executed as
+ES5510 instructions; host code supplies coefficients and the final wet/dry mix.
