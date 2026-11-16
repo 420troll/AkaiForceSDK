@@ -10,7 +10,8 @@ ES5510 execution semantics; see `THIRD_PARTY_NOTICES.md` and
 program/state bundle. Its checked-in program is an original stereo swap test,
 not Ensoniq firmware or a factory effect. A second checked-in test bundle
 adapts MAME’s public PUMP_REPLACE_ESP_PROGRAM fixture to exercise serial-bus
-summing and delay RAM; it is also synthetic emulator test code.
+summing and delay RAM. It sets MEMSIZ to 0xff (8-bit shift) so the 0x100
+GPR offset is one 16-bit DRAM word; it is synthetic emulator test code.
 
 Run the smoke test from repository root:
 
