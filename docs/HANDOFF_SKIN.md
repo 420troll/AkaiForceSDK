@@ -9,7 +9,7 @@ in `plugins/TROLLfxESPLabV03/assets/esp-lab-panel.png` (SHA-256
 `ab99180d34bf949a8bf5b46e6f4b04a69e0b14c933b87dbcc1cbc6942fcd7067`). No
 Ensoniq logos or product photography are used.
 
-The pages are ROUTING, UNIT A-D, and MOD A-D. Each unit page presents common
+The pages are ROUTING, CTRL SRC, UNIT A-D, and MOD A-D. Each unit page presents common
 controls and conditional VCF Distortion / Compressor controls. Each modulation
 page binds both stable, per-unit slots directly: Enabled, Source, Destination,
 Min, Max, and Invert. This preserves the host's built-in parameter chunk state.

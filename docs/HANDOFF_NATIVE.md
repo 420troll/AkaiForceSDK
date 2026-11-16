@@ -1,9 +1,9 @@
 # Native effects path handoff
 
-The latest Track A expansion adds ten selectable native algorithms to the
-V0.2 plugin: Delay, Chorus, Flanger, Room, Hall, Plate, Modulated Reverb, VCF
-Distortion, EQ Panner DDL, and Compressor. It extends the existing `AudioEngine`
-and `EffectsUnit` API in `src/original/audio_engine.hpp/.cpp`.
+The original Track A expansion added ten selectable native algorithms to the
+V0.2 engine: Delay, Chorus, Flanger, Room, Hall, Plate, Modulated Reverb, VCF
+Distortion, EQ Panner DDL, and Compressor. V0.3 now uses that engine together
+with the issue-fix reverb module and per-algorithm host mapping described below.
 
 Room/Hall use short early-reflection taps into a four-line feedback decay field.
 Plate uses two serial allpass diffusion stages before the decay field. These
@@ -12,8 +12,10 @@ not factory algorithms or bit-exact topologies. VCF Distortion approximates the
 documented high-pass, envelope-modulated resonant stage and soft clipping
 sequence. EQ Panner DDL combines stereo LFO panning and cross-fed echoes.
 Compressor uses a feed-forward envelope detector and ratio/threshold/attack/
-release defaults. Distortion-specific and dynamics-specific parameters are not
-yet exposed through the host UI; no vintage parameter mapping is claimed.
+release. V0.2 initially lacked distortion and dynamics controls; V0.3 exposes
+drive/cutoff and threshold/ratio/attack/release. Other documented controls
+remain partial. No factory parameter mapping is claimed where the catalog marks
+an extension or the DSP uses an approximation.
 
 The unit retains stereo delay buffers up to 10 seconds and the flanger sweep is
 bounded to 0.1–15 ms. DSP allocation occurs in `prepare()`, not `process()`.
