@@ -1,0 +1,15 @@
+{
+  "name": "ESP Lab V0.3",
+  "manufacturer": "TROLLfx",
+  "version": "0.3.0",
+  "format": "vst2",
+  "kind": "effect",
+  "uid": "Tfx3",
+  "numInputs": 2,
+  "numOutputs": 2,
+  "category": "Effect",
+  "file32": "VST/esp-lab-v03-arm32.so",
+  "file64": "VST/esp-lab-v03-arm64.so",
+  "description": "Four stereo Ensoniq-inspired units with algorithm-specific controls and preset state.",
+  "license": "MIT"
+}

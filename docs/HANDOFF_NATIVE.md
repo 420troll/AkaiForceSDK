@@ -37,3 +37,26 @@ Add parameter smoothing, expose the algorithm-specific dynamics/distortion
 controls, refine early reflection/predelay controls, and test on Force only
 after deployment authorization. This is original Ensoniq-inspired DSP and does
 not claim recovery of Ensoniq programs.
+
+## Parameter catalog and V0.3 state
+
+`research/dp4_parameter_catalog.json` records manual-visible control names and
+ranges for the ten current choices, with source page and a `verified` or
+`extension` label. TROLLfx-only controls are labeled extensions.
+
+The isolated `plugins/TROLLfxESPLabV03/` plugin uses UID `Tfx3` and has 22
+algorithm/unit controls plus 12 stable modulation controls per unit (2 globals
++ 4 × 34 = 138 parameters). Its modulation page identifiers are `Unit A Mod1
+Enabled`, `Unit A Mod1 Source`, `Unit A Mod1 Destination`, `Unit A Mod1 Min`,
+`Unit A Mod1 Max`, `Unit A Mod1 Invert`, then Mod2, repeated for B/C/D. Sources
+are Off, Internal LFO and Envelope; destinations are Time, Feedback, Mix, Rate,
+Depth, Diffusion, Damping, Width, Threshold, Ratio, Attack, Release and Cutoff.
+Modulation updates at fixed 8-sample segments. VST chunk state round-trips all
+138 parameters. Algorithms consume only relevant DSP fields; the host UI still
+needs conditional visibility for unrelated controls before release.
+
+V0.3 native, ARMv7 and ARM64 SDK builds passed; validator reported 0 errors and
+0 warnings. Host simulator passed 20/20, including 32/512 frame blocks,
+in-place processing, finite output and all-parameter state restore. Average
+desktop timing: 1.04% of a 128-frame block, orientation only. No Force hardware
+deployment or performance measurement was performed.
