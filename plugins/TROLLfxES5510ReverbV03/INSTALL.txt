@@ -1,7 +1,7 @@
 TROLLfx ES5510 V0.3 — Nonlinear & Reverb Lab — Akai Force ARMv7
 ============================================================
 
-UID: Tfx3. Install to its own folder while comparing with prototype builds.
+UID: TfxR. Install to its own folder while comparing with prototype builds.
 The package does not replace the TfxX or TfxV plugin folders.
 
 1. Verify the ZIP SHA-256 from docs/HANDOFF_ES5510_V03_REVERBS.md.

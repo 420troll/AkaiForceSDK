@@ -23,7 +23,7 @@ enum Param : int {
     kTap1,kTap2,kTap3,kTap4,kTap5,kTap6,kTap7,kTap8,kTap9,
     kParamCount
 };
-constexpr char kUid[]="Tfx3";
+constexpr char kUid[]="TfxR";
 const std::vector<std::string> kDivisions={"1/32","1/16 Triplet","1/16","1/16 Dotted","1/8 Triplet","1/8","1/8 Dotted","1/4 Triplet","1/4","1/4 Dotted","1/2 Triplet","1/2"};
 const std::vector<std::string> kAlgorithms={"DELAY","CHORUS","PHASER","PANNER","ROTARY","SMALL PLATE","LARGE PLATE","ROOM","HALL","GATED","REVERSE 1","REVERSE 2","NON LIN 1","NON LIN 2","NON LIN 3"};
 }

@@ -5,6 +5,7 @@ Build
 -----
 SDK: inmusic-software/mpc-plugin-builder-sdk @ febd2ca5bd9eb16c4a412837196e145566bc981b
 Toolchain: Zig 0.17.1
+VST2 UID audit: all source plugin IDs unique; ES5510 V0.3 is TfxR (ESP Lab V0.3 is Tfx3)
 Native: PASS, 3.0 MB
 Force ARM32: PASS, 262 KB; ELF ARM EABI5; maximum GLIBC 2.27; VSTPluginMain exported
 ARM64: PASS, 303 KB; included as an extra target
@@ -66,6 +67,6 @@ Gated 0.511871, Reverse 1/2 0.498199/0.425629, NonLin 1/2/3
 Install package
 ---------------
 Path: trollfx-es5510-v03-nonlinear-reverb-akai-force-armv7.zip
-SHA-256: dc6697f9f650fab4df9b9b83a2f6630be4826888b207ece26cc8b3b637f347fc
-Contents: one UID Tfx3 plugin folder, ARM32/ARM64 VST2 files, manifest, Force
+SHA-256: 7ce484e3d42eff95ff0ec32f974013b6b7e276a81238100b42b2c7513003ff95
+Contents: one UID TfxR plugin folder, ARM32/ARM64 VST2 files, manifest, Force
 skin and Q-Link files, README, install text, and MAME BSD-3-Clause notices.

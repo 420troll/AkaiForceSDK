@@ -1,6 +1,6 @@
 # TROLLfx ES5510 V0.3 — Nonlinear & Reverb Lab
 
-Single consolidated stereo Force VST2 plugin (host name `ES5510 NonLin Reverb V0.3`), UID `Tfx3`. Includes the
+Single consolidated stereo Force VST2 plugin (host name `ES5510 NonLin Reverb V0.3`), UID `TfxR`. Includes the
 ES5510 delay, tempo delay, chorus, phaser, panner, ping-pong and rotary
 algorithms alongside original TROLLfx ES5510 NonLin 1/2/3, plate, room, hall,
 gated and reverse reverb programs. NonLin tap levels are independent controls;

@@ -19,8 +19,17 @@ def main():
     repo = args.repo.resolve()
     project = repo / "plugins/TROLLfxES5510ReverbV03"
     manifest = json.loads((project / "plugin.json").read_text())
-    if manifest.get("uid") != "Tfx3" or manifest.get("name") != "ES5510 NonLin Reverb V0.3":
+    if manifest.get("uid") != "TfxR" or manifest.get("name") != "ES5510 NonLin Reverb V0.3":
         raise SystemExit("Unexpected V0.3 identity; refusing to package")
+    uid_owners = {}
+    for candidate in sorted((repo / "plugins").glob("*/plugin.json")):
+        data = json.loads(candidate.read_text())
+        uid = data.get("uid")
+        if isinstance(uid, str):
+            uid_owners.setdefault(uid, []).append(candidate.relative_to(repo).as_posix())
+    collisions = {uid: owners for uid, owners in uid_owners.items() if len(owners) > 1}
+    if collisions:
+        raise SystemExit(f"Plugin UID collision in source manifests: {collisions}")
     built = project / "build" / FOLDER
     required = [manifest["file32"], "plugin.json", "version.xml",
                 "Plugin Skins/TUI.json", "Plugin Skins/Q-Links.json"]
