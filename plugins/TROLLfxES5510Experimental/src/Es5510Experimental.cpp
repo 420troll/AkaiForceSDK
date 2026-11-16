@@ -61,8 +61,10 @@ public:
 
         // Load the host's atomic parameters once per block. No heap work, locks,
         // filesystem access, or logging occurs on this callback path.
-        es5510::Parameters p;
-        p.mode = getInt(kMode) == 0 ? es5510::Mode::Delay : es5510::Mode::Chorus;
+        trollfx::esp::vst::Es5510EffectProcessor::Parameters p;
+        p.mode = getInt(kMode) == 0
+                     ? trollfx::esp::vst::Es5510EffectProcessor::Mode::Delay
+                     : trollfx::esp::vst::Es5510EffectProcessor::Mode::Chorus;
         p.delayMs = get(kTime);
         p.feedback = get(kFeedback) * 0.01f;
         p.wet = get(kWet) * 0.01f;
@@ -94,7 +96,7 @@ private:
         return info;
     }
 
-    es5510::Es5510EffectProcessor processor_;
+    trollfx::esp::vst::Es5510EffectProcessor processor_;
 };
 
 MPC_PLUGIN_ENTRY(TROLLfxES5510Experimental)
