@@ -32,6 +32,13 @@ The `.amxd` is a Max patch bundle with a readable JSON `patcher`, and the JS rev
 
 **Catalog coverage caveat:** Numbered files are *editor data tables*, not 52 proven unique DP/4 algorithms. Some algorithm numbers share identical tables and some header OCR/transcription artifacts name several algorithms in one file. Filename/index convention is a lookup key, not guaranteed to match the original DP/4 physical algorithm number in all cases. Cross-check against `docs/DP4_ALGORITHM_RESEARCH.md` and the original DP/4 manual before claiming catalog completeness, numerical units, defaults, or exact source code behavior.
 
+
+## Table reuse and scope
+
+Comparing normalized parameter field sequences (display label, internal offset, type, display range), the 52 files have **41 distinct parameter-table structures**. Exact repeats: `[1,2,3]` (Room/Hall), `[4,46,59]` (Nonlinear Reverb), `[5,6]` (Plate), `[13,27]` (Guitar Amp variants), `[32,33,34,35]` (Vocoder bands), `[36,37]` (two-unit pitch), and `[43,44]` (two-unit delay). **8.csv and 54.csv are *not* equivalent** despite both identifying Reverse Reverb; inspect the difference before merging them. File numbers absent from the archive do not establish algorithms absent from hardware.
+
+Observed row value-type distribution: Pos Frac 353, Pos Int 293, Table 187, Signed Int 114, Signed Frac 88, Word 70, Word 2 18, Function 7, Pos Int 2 5, combined Pos Frac Table 2. The mixed `Pos Frac Table` rows are ambiguous and need manual review. Parameter names/descriptions are facts from a third-party editor data table, not proof of algorithm-level coefficients.
+
 ## Priorities for Codex
 
 1. **Make reverbs audible first.** In `plugins/TROLLfxESPLabV02/src/audio_engine.cpp` `processReverb` computes a damped tank output `v` but does not use it in feedback; it also does not link UI Time to decay. Trace wet output and routing with isolated wet-only impulse renders. Implement clear Decay, Pre-delay, Diffusion 1/2, damping, reflection taps and width; measurable tails at suitable times.
