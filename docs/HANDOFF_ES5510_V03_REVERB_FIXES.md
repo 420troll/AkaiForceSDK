@@ -4,6 +4,7 @@
 
 - Branch: `issue8-es5510-v03-reverb-lab`
 - Starting point: `49434969b3b95d5af1b7eacf113d1effa1f8be46`
+- Implementation and package commit: `901fc065c6c5806883c253f434470ad4b4809fa5` (audio WAV fixtures are committed immediately after it).
 - Plugin UID remains `TfxR`; the 54 existing parameter indices and serialized state layout are unchanged.
 - Audio remains processed by the standalone MAME-derived ES5510 instruction engine. The host schedules controls and envelopes; no native reverb substituted for the instruction programs.
 - The corrected ARMv7 package has been installed on the Force SSD at `/media/SSD250g/VST2 Plugins/TROLLfx - VST - ES5510 NonLin Reverb V0.3`. The previous directory is preserved as `TROLLfx - VST - ES5510 NonLin Reverb V0.3.backup-issue9`. The installed ARMv7 binary SHA-256 matches the local build (`bd8ff36cfd56c19a42e6572c5d4175783360da3faae984565b5d2cfc7727d776`). The plugin host was not restarted or rescanned, so no post-install audio test has occurred.
