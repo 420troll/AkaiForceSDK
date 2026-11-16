@@ -88,6 +88,7 @@ private:
     std::uint32_t fadeRemaining_=0,fadeTotal_=0;
     double chorusPhase_=0.0,phaserPhase_=0.0,panPhase_=0.0,hornPhase_=0.0,drumPhase_=0.0;
     float hornRateState_=0.0f,drumRateState_=0.0f;
+    float phaserLimiterGain_=1.0f;
     Smooth delaySamples_{},feedback_{},wet_{},dry_{},chorusRate_{},chorusDepthSamples_{};
     Smooth phaserRate_{},phaserCenter_{},phaserDepth_{},phaserSpread_{},phaserFeedback_{};
     Smooth panPosition_{},panWidth_{},panMotion_{},panRate_{};

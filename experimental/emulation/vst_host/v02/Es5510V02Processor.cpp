@@ -113,7 +113,7 @@ bool Processor::prepare(double sampleRate,std::size_t maxBlockSize) noexcept {
   for(Program p:programs)configure(p);
   active_=fadeFrom_=fadeTo_=Program::Delay;fadeRemaining_=fadeTotal_=0;processedFrames_=0;
   chorusPhase_=phaserPhase_=panPhase_=hornPhase_=drumPhase_=0;
-  hornRateState_=drumRateState_=0;paramsInitialized_=false;prepared_=true;return true;
+  hornRateState_=drumRateState_=0;phaserLimiterGain_=1.0f;paramsInitialized_=false;prepared_=true;return true;
 }
 
 void Processor::configure(Program p) noexcept {
@@ -138,6 +138,7 @@ void Processor::configure(Program p) noexcept {
 void Processor::reset() noexcept {
   if(!prepared_) return;
   chorusPhase_=phaserPhase_=panPhase_=hornPhase_=drumPhase_=0;
+  phaserLimiterGain_=1.0f;
   fadeRemaining_=fadeTotal_=0;fadeFrom_=fadeTo_=active_;paramsInitialized_=false;
 }
 
@@ -178,7 +179,10 @@ std::array<std::int16_t,2> Processor::run(Program p,const std::array<std::int16_
   }else if(p==Program::Phaser){
     const float rate=phaserRate_.value,base=phaserCenter_.value,depth=phaserDepth_.value,spread=phaserSpread_.value;
     const double mod=std::sin(kTwoPi*phaserPhase_);const double center=std::clamp(double(base)*std::exp2(double(depth)*mod),30.0,sampleRate_*0.45);
-    e.setRegister(152,q22Signed(phaserFeedback_.value));
+    // A high-level beat probe showed Q1.23 add/sub wrap once the resonant
+    // allpass loop is driven above 0.75 feedback. Bound the program before it
+    // reaches that wrap point; signed polarity remains available.
+    e.setRegister(152,q22Signed(std::clamp(phaserFeedback_.value,-0.75f,0.75f)));
     if((phaserControlCounter_++&7u)==0){
       const auto leftCoefficient=q22Signed(coefficient(center,sampleRate_));
       const auto rightCoefficient=q22Signed(coefficient(center*std::exp2(spread),sampleRate_));
@@ -208,7 +212,17 @@ std::array<std::int16_t,2> Processor::run(Program p,const std::array<std::int16_
     auto driven=in;driven[4]=toPcm(fromPcm(in[4])*static_cast<float>(driveGain));driven[5]=toPcm(fromPcm(in[5])*static_cast<float>(driveGain));
     e.processFrame(driven,out);
   }
-  if(p!=Program::Rotary)e.processFrame(in,out);
+  if(p==Program::Phaser){
+    // The allpass difference and recurrence live in 24-bit GPRs. ALU add/sub
+    // wraps on Q1.23 overflow, so hot cascaded transients can wrap stage state.
+    // Give the cascade 12 dB of internal headroom, then restore that gain in
+    // the host wet leg. This keeps the same linear response/notches while
+    // providing measured margin against internal 24-bit wrap.
+    auto headroom=in;
+    headroom[4]=toPcm(fromPcm(in[4])*0.25f);
+    headroom[5]=toPcm(fromPcm(in[5])*0.25f);
+    e.processFrame(headroom,out);
+  }else if(p!=Program::Rotary)e.processFrame(in,out);
   else {
     const double h=rotaryHorn_.value,d=rotaryDrum_.value;
     hornPhase_+=kTwoPi*h/sampleRate_;drumPhase_+=kTwoPi*d/sampleRate_;
@@ -264,19 +278,31 @@ void Processor::processBlock(const float* inL,const float* inR,float* outL,float
       // The newer spatial programs emit wet only, so mix those per program
       // before the mode crossfade to avoid a level jump during transitions.
       if(program==Program::Phaser||program==Program::Panner||program==Program::Rotary){
+        if(program==Program::Phaser){left*=4.0f;right*=4.0f;}
         left=left*wet_.value+l*dry_.value;
         right=right*wet_.value+r*dry_.value;
       }
       return std::array<float,2>{left,right};
     };
     std::array<float,2> y{};
-    if(fadeRemaining_){
+    const bool crossfading=fadeRemaining_!=0;
+    if(crossfading){
       const auto old=renderProgram(fadeFrom_),next=renderProgram(fadeTo_);
       const float alpha=1.0f-static_cast<float>(fadeRemaining_)/static_cast<float>(fadeTotal_);
       y[0]=old[0]*(1-alpha)+next[0]*alpha;y[1]=old[1]*(1-alpha)+next[1]*alpha;
       if(--fadeRemaining_==0)active_=fadeTo_;
     }else y=renderProgram(active_);
     float yl=y[0],yr=y[1];
+    const bool phaserPath=crossfading?(fadeFrom_==Program::Phaser||fadeTo_==Program::Phaser):active_==Program::Phaser;
+    if(phaserPath){
+      // Keep the stereo pair linked so a single hot channel cannot shift the
+      // image. Attack is immediate; recovery is a short bounded release.
+      const float peak=std::max(std::abs(yl),std::abs(yr));
+      const float target=peak>0.98f?0.98f/peak:1.0f;
+      if(target<phaserLimiterGain_)phaserLimiterGain_=target;
+      else phaserLimiterGain_+=(target-phaserLimiterGain_)*(1.0f-std::exp(-1.0f/(0.05f*static_cast<float>(sampleRate_))));
+      yl*=phaserLimiterGain_;yr*=phaserLimiterGain_;
+    }else phaserLimiterGain_=1.0f;
     const float b=nextBypass();yl=yl*(1-b)+l*b;yr=yr*(1-b)+r*b;
     if(outL)outL[i]=yl;
     if(outR)outR[i]=yr;
