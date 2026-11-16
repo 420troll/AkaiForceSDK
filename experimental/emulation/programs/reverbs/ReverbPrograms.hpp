@@ -25,19 +25,19 @@ struct Definition {
 };
 inline constexpr std::size_t kRecommendedDramWords = 65536; // two 32768-word banks
 inline constexpr std::uint8_t kReadLeftGpr = 0, kReadRightGpr = 1;
-inline constexpr std::array<std::uint64_t,31> kNonLin1Transient = {
+inline constexpr std::array<std::uint64_t,45> kNonLin1Transient = {
 #include "nonlin1_transient_words.inc"
 };
-inline constexpr std::array<std::uint64_t,61> kNonLin2Bloom = {
+inline constexpr std::array<std::uint64_t,75> kNonLin2Bloom = {
 #include "nonlin2_bloom_words.inc"
 };
-inline constexpr std::array<std::uint64_t,36> kNonLin3Drum = {
+inline constexpr std::array<std::uint64_t,50> kNonLin3Drum = {
 #include "nonlin3_drum_words.inc"
 };
-inline constexpr std::array<std::uint64_t,41> kSmallPlate = {
+inline constexpr std::array<std::uint64_t,55> kSmallPlate = {
 #include "small_plate_words.inc"
 };
-inline constexpr std::array<std::uint64_t,51> kLargePlate = {
+inline constexpr std::array<std::uint64_t,65> kLargePlate = {
 #include "large_plate_words.inc"
 };
 // The three Non Lin-inspired sketches below remain research fixtures. They

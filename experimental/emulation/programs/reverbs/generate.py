@@ -12,6 +12,11 @@ def nop(): return enc()
 def mac(dst,coef): return enc(255,255,dst,coef,op=4)
 def end(): return enc(op=15,ram=0)
 
+def one_pole(signal,temp,state,coefficient):
+    # y = state + alpha * (x - state); state and MAC execute in ES5510.
+    return [mov(temp,signal),alu(temp,state,3),nop(),mac(temp,coefficient),
+            alu(temp,state,2),mov(state,temp),mov(signal,temp)]
+
 # Baseline independent-stereo feedback delay, with the feedback writes replaced
 # by cross-coupling for plate networks. All values are 24-bit/Q22 GPR controls.
 BASE=[
@@ -41,6 +46,10 @@ def build(name, stages, delays, feedback, cross=False, center=False):
     # Keep the two input RAM reads and two delayed-return captures in their
     # original first four slots. Their DIL timing depends on that schedule.
     prefix = BASE[:4]+prefix
+    # Insert a controllable one-pole damping stage after diffusion and inside
+    # the feedback path. Coefficient GPR163 is the control-rate alpha.
+    for channel,signal in enumerate((10,11)):
+        prefix += one_pole(signal,172+channel,174+channel,163)
     tail=BASE[4:]
     if cross:
         # Feedback input L gets delayed R; input R gets delayed L.

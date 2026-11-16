@@ -27,6 +27,13 @@ def allpass(signal, out, state, coef):
             add(out, state), mov(state, signal)]
 
 
+def damping_filter(signal, temp, state, coef):
+    # One-pole low-pass in the feedback path, y = z + alpha * (x-z).
+    # Coefficient alpha is control-rate Q22 in GPR 52/53.
+    return [mov(temp, signal), sub(temp, state), nop(), mac(temp, coef),
+            add(temp, state), mov(state, temp), mov(signal, temp)]
+
+
 def assemble(kind):
     hall = kind == "hall"
     w = [
@@ -49,8 +56,13 @@ def assemble(kind):
     if hall:
         w += allpass(34, 36, 92, 51)
         w += allpass(35, 37, 93, 51)
+    # A separate one-pole damping state per channel differentiates decay
+    # spectrum from the plate family; both multiply and state update execute
+    # in ES5510 instructions.
+    w += damping_filter(36 if hall else 34, 38, 94, 52)
+    w += damping_filter(37 if hall else 35, 39, 95, 53)
     write_l, write_r = len(w), len(w) + 1
-    w += [dol(36 if hall else 34), dol(37 if hall else 35)]
+    w += [dol(38), dol(39)]
     # Tap mix: long decay return plus independently tunable early return.
     w += [mov(60, 14), mov(61, 15), mac(60, 42), mac(61, 42),
           mov(62, 22), mov(63, 23), mac(62, 41), mac(63, 41),

@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "room_hall"))
-from build_programs import enc, mov, add, sub, mac, dil_mac, dol, nop, end, allpass
+from build_programs import enc, mov, add, sub, mac, dil_mac, dol, nop, end, allpass, damping_filter
 
 ROOT=Path(__file__).resolve().parent
 
@@ -18,8 +18,10 @@ def assemble(name, stages):
         if stages>1:
             out2=36+channel;state2=92+channel
             w+=allpass(out,out2,state2,51)
+    for channel,source in enumerate((36 if stages>1 else 34,37 if stages>1 else 35)):
+        w+=damping_filter(source,38+channel,94+channel,44)
     write_l,write_r=len(w),len(w)+1
-    w += [dol(36 if stages>1 else 34),dol(37 if stages>1 else 35)]
+    w += [dol(38),dol(39)]
     # Output delay return is scaled by independent wet and host envelope gains.
     # Dry path uses the same instruction engine and can be zeroed for 100% wet.
     w += [mov(60,14),mov(61,15),mac(60,41),mac(61,41),

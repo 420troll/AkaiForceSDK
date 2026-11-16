@@ -1,0 +1,71 @@
+TROLLfx ES5510 V0.3 — verification results
+==========================================
+
+Build
+-----
+SDK: inmusic-software/mpc-plugin-builder-sdk @ febd2ca5bd9eb16c4a412837196e145566bc981b
+Toolchain: Zig 0.17.1
+Native: PASS, 3.0 MB
+Force ARM32: PASS, 262 KB; ELF ARM EABI5; maximum GLIBC 2.27; VSTPluginMain exported
+ARM64: PASS, 303 KB; included as an extra target
+SDK --strict validation: 0 errors, 0 warnings; TUI 6 tabs and Q-Link mappings valid
+No Force installation or hardware test was performed.
+
+VST host simulation
+------------------
+44.1 kHz, requested 128-frame blocks: PASS, 20 passed / 0 warnings / 0 failures.
+48 kHz, requested 4096-frame blocks: PASS, 20 passed / 0 warnings / 0 failures.
+Both include 32/512-frame delivery, in-place, state chunk roundtrip, 200 parameter
+updates, no NaN/Inf, no denormals, no output clips, and successful re-prepare.
+Desktop timing was 2.46% average / 5.41% worst at 44.1 kHz and 3.52% / 3.71% at
+48 kHz; these numbers are not representative of the Force CPU.
+
+Strict native ReverbBank impulse / hot-beat test
+------------------------------------------------
+The deterministic 44.1 kHz test used 2-second 100%-wet impulse and hot-beat
+renders, 13 ms predelay, 1.8 s decay, and fixed diffusion/trigger controls.
+All ten modes produced nonzero output, and no sample exceeded full scale.
+
+Mode             Impulse peak   Early RMS   Late RMS    Stereo corr   Beat peak
+Small Plate      0.167297       0.003140    0.001472    0.000000      0.354401
+Large Plate      0.156219       0.002351    0.001070    0.000000      0.329010
+Room             0.348328       0.002522    0.001042    0.000192      0.412079
+Hall             0.081238       0.000000    0.000429    0.000000      0.171143
+Gated            0.004944       0.0000003   0.000013    0.000000      0.300598
+Reverse 1        0.248810       0.004970    0.001205    0.999944      0.348053
+Reverse 2        0.248810       0.004970    0.001205    0.999944      0.294403
+NonLin 1         0.033630       0.000982    0.000048    0.000000      0.039795
+NonLin 2         0.057892       0.000005    0.000356    0.000013      0.068481
+NonLin 3         0.022034       0.000757    0.000000    0.867505      0.022034
+
+Gated impulse peak is low under the isolated one-frame trigger, while its beat
+response is clearly nonzero. Trigger envelope scheduling is an approximation;
+retrigger and pre-trigger behavior must be judged on hardware and is not claimed
+to match the DP/4 firmware.
+
+Other DSP checks
+----------------
+NonLin tap-network strict test: PASS at 44.1 and 48 kHz; programs are 81/117/86
+words, hot-beat clip count zero, and changing tap-level GPRs changes output.
+Impulse endpoints at 44.1 kHz: 22,052 / 66,017 / 1,532 frames for NonLin 1/2/3.
+At 48 kHz: 24,002 / 71,855 / 1,667 frames.
+Standalone Room/Hall strict test: PASS; 59/71 words and rendered outputs differ.
+Phaser hot input test: PASS at both rates and both feedback signs; peak <=0.98,
+zero clipped frames. 500 Hz / 2 kHz notches: -64.34/-64.67 dB (44.1 kHz),
+-64.88/-71.03 dB (48 kHz).
+
+Integrated music demos
+----------------------
+`demos/` contains 16 same-input, 4-second, 44.1 kHz stereo renders. All files
+have nonzero output; every render reported zero clipped samples. Peaks: delay /
+ping-pong 0.650848, chorus 0.980011, phaser 0.980000, panner 0.980007, rotary
+0.373444, Small/Large Plate 0.712097/0.717621, Room/Hall 0.566101/0.399933,
+Gated 0.511871, Reverse 1/2 0.498199/0.425629, NonLin 1/2/3
+0.176392/0.177032/0.172463.
+
+Install package
+---------------
+Path: trollfx-es5510-v03-nonlinear-reverb-akai-force-armv7.zip
+SHA-256: dc6697f9f650fab4df9b9b83a2f6630be4826888b207ece26cc8b3b637f347fc
+Contents: one UID Tfx3 plugin folder, ARM32/ARM64 VST2 files, manifest, Force
+skin and Q-Link files, README, install text, and MAME BSD-3-Clause notices.

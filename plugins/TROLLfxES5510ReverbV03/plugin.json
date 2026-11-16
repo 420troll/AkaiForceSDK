@@ -1,0 +1,16 @@
+{
+  "name": "ES5510 NonLin Reverb V0.3",
+  "manufacturer": "TROLLfx",
+  "version": "0.3.0",
+  "format": "vst2",
+  "kind": "effect",
+  "uid": "Tfx3",
+  "numInputs": 2,
+  "numOutputs": 2,
+  "category": "Effect",
+  "file32": "VST/es5510-nonlin-reverb-v03-arm32.so",
+  "file64": "VST/es5510-nonlin-reverb-v03-arm64.so",
+  "description": "Consolidated TROLLfx ES5510 effects with original nonlinear and reverb microprograms.",
+  "author": "TROLLfx",
+  "license": "BSD-3-Clause (MAME-derived ES5510 core)"
+}

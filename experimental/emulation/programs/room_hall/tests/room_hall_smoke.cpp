@@ -31,7 +31,7 @@ Result render(const std::uint64_t*program,std::size_t words,unsigned writeL,unsi
  cpu.setRegister(0,decayL);cpu.setRegister(1,kBank+decayR);cpu.setRegister(4,earlyL);cpu.setRegister(5,kBank+earlyR);
  cpu.setRegister(writeL,0);cpu.setRegister(writeR,kBank);
  cpu.setRegister(40,q22(0.66f));cpu.setRegister(41,q22(0.24f));cpu.setRegister(42,q22(0.58f));cpu.setRegister(43,0);
- cpu.setRegister(50,q22(isHall?0.58f:0.78f));cpu.setRegister(51,q22(isHall?0.30f:0.0f));cpu.setRegister(52,q22(0.18f));
+ cpu.setRegister(50,q22(isHall?0.58f:0.78f));cpu.setRegister(51,q22(isHall?0.30f:0.0f));cpu.setRegister(52,q22(0.55f));cpu.setRegister(53,q22(0.55f));
  Result result;result.y.resize(kFrames);
  std::array<std::int16_t,6> in{};std::array<std::int16_t,2> out{};
  for(std::uint32_t n=0;n<kFrames;++n){in.fill(0);if(n==0){in[4]=28000;in[5]=11000;}cpu.processFrame(in,out);result.y[n]={float(out[0])/32768.0f,float(out[1])/32768.0f};}

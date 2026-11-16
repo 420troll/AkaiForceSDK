@@ -1,0 +1,32 @@
+TROLLfx ES5510 V0.3 — Nonlinear & Reverb Lab — Akai Force ARMv7
+============================================================
+
+UID: Tfx3. Install to its own folder while comparing with prototype builds.
+The package does not replace the TfxX or TfxV plugin folders.
+
+1. Verify the ZIP SHA-256 from docs/HANDOFF_ES5510_V03_REVERBS.md.
+2. On the Force, inspect SSD mount flags:
+
+   grep '/media/SSD250g' /proc/mounts
+
+   If the destination volume has `noexec`, stop and use a supported executable
+   plugin location. Do not change system mount settings persistently.
+3. Extract this package on a computer, then copy the single folder named
+   `TROLLfx - VST - ES5510 NonLin Reverb V0.3` to:
+
+   /media/SSD250g/VST2 Plugins/
+
+   Check first that the destination V0.3 folder does not already exist. Do not
+   merge into or overwrite another plugin folder.
+4. Enable External Plugin Support in Force settings and restart to rescan.
+   Add “ES5510 NonLin Reverb V0.3” as a stereo insert.
+
+Shell copy command (run only after extraction on the Force SSD, after checking
+that the target does not exist):
+
+   SRC='/media/SSD250g/TROLLfx - VST - ES5510 NonLin Reverb V0.3'
+   DST='/media/SSD250g/VST2 Plugins/TROLLfx - VST - ES5510 NonLin Reverb V0.3'
+   test -f "$SRC/plugin.json" && test ! -e "$DST" && cp -a "$SRC" "$DST"
+
+Retirement after V0.3 has been verified on hardware is documented separately
+in the handoff. No automatic installation or retirement is performed.
