@@ -1,5 +1,11 @@
 # TROLLfx ESP Lab V0.2 integration handoff
 
+Final routing-fix source milestone: `6b44d68` (pushed to `main`). Native,
+ARMv7 and ARM64 SDK build succeeded; validator reported 0 errors and 0
+warnings. Host simulation passed 20/20 after the routing correction. The
+ARMv7 library is `VST/esp-lab-v02-arm32.so` in the output folder above; package
+hash below is for the corrected binary. No hardware installation was done.
+
 V0.2 is a separate plugin identity (`Tfx2`); V0.1 project and package are not
 modified. Four stereo `EffectsUnit` instances share the `AudioEngine` interface
 and provide Delay, Chorus, Flanger, Room, Hall, Plate and Modulated Reverb.
