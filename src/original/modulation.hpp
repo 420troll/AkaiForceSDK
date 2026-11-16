@@ -11,7 +11,13 @@ namespace trollfx {
 // An algorithm only acts on destinations that it actually consumes.
 enum class ModDestination : unsigned char {
     Time, Feedback, Mix, Rate, Depth, Diffusion, Damping, Width,
-    Threshold, Ratio, Attack, Release, Cutoff, Decay, Output, Count
+    Threshold, Ratio, Attack, Release, Cutoff, Decay, Output,
+    DistortionGainInDb, DistortionGainOutDb, PreVcfCutoffHz, PreVcfQ,
+    PreVcfEnvDepth, PostVcfCutoffHz, PostVcfQ, PostVcfEnvDepth,
+    EnvelopeAttackMs, EnvelopeReleaseMs, CompGainDb, GateOffDb, GateOnDb,
+    GateReleaseMs, SampleHoldHz, LeftDelayMs, RightDelayMs, LeftEchoMs,
+    RightEchoMs, EchoLevel, BassFcHz, BassGainDb, TrebleGainDb,
+    TrebleFcHz, InputTrimDb, Count
 };
 enum class ModSource : unsigned char {
     Off, HostController1, HostController2, HostController3, HostController4,
@@ -26,6 +32,14 @@ struct ModulatorSlot {
     float minNorm = 0.0f;
     float maxNorm = 1.0f;
     bool invert = false;
+};
+
+// Persistent routing only. LFO phase and envelope history are runtime state,
+// so preset restore starts their phases cleanly instead of serializing floats.
+struct ModulationState {
+    static constexpr unsigned kVersion = 1;
+    unsigned version = kVersion;
+    std::array<ModulatorSlot, 2> slots{};
 };
 
 // Two independently assignable modulators per unit. Controller 1..8 values
@@ -46,9 +60,19 @@ public:
         if (static_cast<unsigned>(slot.destination) >= static_cast<unsigned>(ModDestination::Count)) slot.destination = ModDestination::Mix;
         slots_[index] = slot;
     }
+    void setSlots(const std::array<ModulatorSlot, 2>& slots) noexcept {
+        setSlot(0, slots[0]); setSlot(1, slots[1]);
+    }
+    std::array<ModulatorSlot, 2> getSlots() const noexcept { return slots_; }
+    ModulationState saveState() const noexcept { return {ModulationState::kVersion, slots_}; }
+    bool loadState(const ModulationState& state) noexcept {
+        if (state.version != ModulationState::kVersion) return false;
+        setSlots(state.slots); reset(); return true;
+    }
     const ModulatorSlot& slot(std::size_t i) const noexcept { return slots_[i < 2 ? i : 1]; }
     void beginBlock(float sampleRate, float lfoRateHz) noexcept {
-        if (sampleRate > 0.0f) sampleRate_ = sampleRate;
+        if (std::isfinite(sampleRate) && sampleRate > 0.0f) sampleRate_ = sampleRate;
+        if (!std::isfinite(lfoRateHz)) lfoRateHz = 0.01f;
         const float rate = std::clamp(lfoRateHz, 0.01f, 20.0f);
         phaseInc_ = 6.28318530718f * rate / sampleRate_;
         attackCoeff_ = std::exp(-1.0f / (0.010f * sampleRate_));
@@ -64,7 +88,7 @@ public:
     }
     void process(float inputL, float inputR, const std::array<float, 8>& controllers,
                  const Values& base, Values& output) noexcept {
-        output = base;
+        for (std::size_t i=0;i<kParamCount;++i) output[i]=clamp01(base[i]);
         const float level = clamp01(std::max(std::fabs(inputL), std::fabs(inputR)));
         const float coeff = level > envelope_ ? attackCoeff_ : releaseCoeff_;
         envelope_ = level + coeff * (envelope_ - level);
@@ -91,7 +115,7 @@ public:
     static unsigned toDisplay99(float value) noexcept { return static_cast<unsigned>(std::lround(clamp01(value) * 99.0f)); }
 
 private:
-    static float clamp01(float v) noexcept { return std::clamp(v, 0.0f, 1.0f); }
+    static float clamp01(float v) noexcept { return std::isfinite(v) ? std::clamp(v, 0.0f, 1.0f) : 0.0f; }
     std::array<ModulatorSlot, 2> slots_{};
     float sampleRate_ = 44100.0f, phase_ = 0.0f, phaseInc_ = 0.0f;
     float envelope_ = 0.0f, attackCoeff_ = 0.0f, releaseCoeff_ = 0.0f;

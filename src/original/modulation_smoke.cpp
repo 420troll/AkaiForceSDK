@@ -26,5 +26,24 @@ int main() {
     assert(out[static_cast<unsigned>(ModDestination::Decay)]>=.05f && out[static_cast<unsigned>(ModDestination::Decay)]<=.95f);
     s.destination=ModDestination::Output; m.setSlot(0,s); m.process(0,0,base,out);
     assert(out[static_cast<unsigned>(ModDestination::Output)]>=.05f && out[static_cast<unsigned>(ModDestination::Output)]<=.95f);
+    const auto saved=m.saveState();
+    m.setSlot(0,ModulatorSlot{});
+    assert(m.loadState(saved));
+    assert(m.slot(0).enabled && m.slot(0).destination==ModDestination::Output);
+    auto invalid=saved; invalid.version=999; assert(!m.loadState(invalid));
+    s.source=static_cast<ModSource>(255); s.destination=static_cast<ModDestination>(255);
+    s.minNorm=NAN; s.maxNorm=INFINITY; m.setSlot(0,s);
+    assert(m.slot(0).source==ModSource::Off && m.slot(0).destination==ModDestination::Mix);
+    assert(m.slot(0).minNorm==0.0f && m.slot(0).maxNorm==0.0f);
+    ModulatorSlot host; host.enabled=true; host.source=ModSource::HostController3;
+    host.destination=ModDestination::Mix; host.minNorm=.1f; host.maxNorm=.9f; m.setSlot(0,host);
+    std::array<float,8> controllers{}; controllers[2]=.9f;
+    m.process(0,0,controllers,base,out); assert(out[static_cast<unsigned>(ModDestination::Mix)]>.8f);
+    controllers[2]=.1f; m.process(0,0,controllers,base,out);
+    assert(out[static_cast<unsigned>(ModDestination::Mix)]<.2f);
+    ModulatorSlot second=host; second.source=ModSource::InternalLfo;
+    second.minNorm=.3f; second.maxNorm=.7f; m.setSlot(1,second);
+    m.reset(); m.process(0,0,controllers,base,out);
+    assert(out[static_cast<unsigned>(ModDestination::Mix)]==.5f); // slot 2 wins collision
     std::cout<<"modulation matrix: PASS (LFO audible, envelope, inversion, bounds, off, 0..99)\n";
 }
