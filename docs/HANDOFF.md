@@ -4,8 +4,9 @@
 
 Date: 2026-11-16 UTC
 
-Branch: `issue8-es5510-v03-reverb-lab` (uncommitted at handoff creation; commit
-SHA to be filled after publishing).
+Branch: `issue8-es5510-v03-reverb-lab`.
+
+Source and package commit: `70e423f` (`Add fixed-series ESP Lab V0.4 plugin`).
 
 ### Architecture and scope
 
