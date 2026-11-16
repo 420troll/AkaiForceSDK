@@ -20,7 +20,7 @@ public:
         addParam(choiceParam("routing","Routing",{"Serial","Parallel","Dual"},0));
         addParam(intParam("active","Active Unit",0,3,0));
         for(int u=0;u<N;++u){ const char c=char('A'+u); const std::string s(1,c);
-            addParam(choiceParam(("algo"+s).c_str(),("Unit "+s+" Algorithm").c_str(),{"Delay","Chorus","Flanger","Room","Hall","Plate","Mod Reverb"},1));
+            addParam(choiceParam(("algo"+s).c_str(),("Unit "+s+" Algorithm").c_str(),{"Delay","Chorus","Flanger","Room","Hall","Plate","Mod Reverb","VCF Distortion","EQ Panner DDL","Compressor"},1));
             addParam(logParam(("time"+s).c_str(),("Unit "+s+" Time").c_str(),1,10000,350,"ms",0));
             addParam(floatParam(("depth"+s).c_str(),("Unit "+s+" Depth").c_str(),0,100,4,"ms",1));
             addParam(logParam(("rate"+s).c_str(),("Unit "+s+" Rate").c_str(),0.01f,8,0.35f,"Hz",2));
@@ -35,7 +35,7 @@ public:
         const float* l=c.inputs[0]; const float* r=c.numInputs>1?c.inputs[1]:c.inputs[0];
         float* ol=c.outputs[0]; float* or_=c.numOutputs>1?c.outputs[1]:c.outputs[0];
         const std::size_t n=std::min<std::size_t>(std::size_t(c.numFrames),buffers_[0].size());
-        for(int u=0;u<N;++u){ const int a=ix(u,kAlgo); trollfx::EffectParams p; p.timeMs=get(ix(u,kTime)); p.depthMs=get(ix(u,kDepth)); p.rateHz=get(ix(u,kRate)); p.feedback=get(ix(u,kFeedback))*0.01f; p.mix=get(ix(u,kMix))*0.01f; p.diffusion=.65f; p.damping=.35f; engines_[u].setAlgorithm(algorithm(std::min(getInt(a),6))); engines_[u].setParams(p); }
+        for(int u=0;u<N;++u){ const int a=ix(u,kAlgo); trollfx::EffectParams p; p.timeMs=get(ix(u,kTime)); p.depthMs=get(ix(u,kDepth)); p.rateHz=get(ix(u,kRate)); p.feedback=get(ix(u,kFeedback))*0.01f; p.mix=get(ix(u,kMix))*0.01f; p.diffusion=.65f; p.damping=.35f; engines_[u].setAlgorithm(algorithm(std::min(getInt(a),9))); engines_[u].setParams(p); }
         const int route=getInt(kRoute);
         float* aL=buffers_[0].data(); float* aR=buffers_[1].data();
         float* bL=buffers_[2].data(); float* bR=buffers_[3].data();
