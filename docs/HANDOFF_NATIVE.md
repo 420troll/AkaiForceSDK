@@ -45,18 +45,29 @@ ranges for the ten current choices, with source page and a `verified` or
 `extension` label. TROLLfx-only controls are labeled extensions.
 
 The isolated `plugins/TROLLfxESPLabV03/` plugin uses UID `Tfx3` and has 22
-algorithm/unit controls plus 12 stable modulation controls per unit (2 globals
-+ 4 × 34 = 138 parameters). Its modulation page identifiers are `Unit A Mod1
-Enabled`, `Unit A Mod1 Source`, `Unit A Mod1 Destination`, `Unit A Mod1 Min`,
-`Unit A Mod1 Max`, `Unit A Mod1 Invert`, then Mod2, repeated for B/C/D. Sources
-are Off, Internal LFO and Envelope; destinations are Time, Feedback, Mix, Rate,
-Depth, Diffusion, Damping, Width, Threshold, Ratio, Attack, Release and Cutoff.
-Modulation updates at fixed 8-sample segments. VST chunk state round-trips all
-138 parameters. Algorithms consume only relevant DSP fields; the host UI still
-needs conditional visibility for unrelated controls before release.
+algorithm/unit controls, 12 stable modulation controls per unit and eight
+global host-automatable controller values (2 globals + 8 controllers +
+4 × 34 = 146 parameters). Controller 1..8 are VST host parameters, not MIDI CC.
+Each unit's Mod1/Mod2 source choices are Off, Controller 1..8, Internal LFO and
+Envelope. Destinations are Time, Feedback, Mix, Rate, Depth, Diffusion, Damping,
+Width, Threshold, Ratio, Attack, Release, Cutoff, Decay and Output. Modulation
+updates at fixed 8-sample segments. Decay and Output map to the actual
+`DP4InspiredReverb` `decaySeconds` and `outputDb` fields; the reverb tail smoke
+compares fixed versus modulated tail energy and passes (0.0047241 vs 0.238261).
+VST chunk state round-trips all 146 parameters.
+
+The routing selector supports Serial, Parallel, Dual, AB Feedback 1 and AB
+Feedback 2. The feedback modes are stereo 1-source approximations: B's output
+feeds A through a one-host-block delay, with A's Feedback control setting the
+send. Feedback 1 returns the processed AB chain; Feedback 2 blends it equally
+with dry input. This does not reproduce the DP/4 physical routing or exact dry
+paths. `force_routing_smoke.cpp` passes bounded-send, dry-path and bypass cases.
 
 V0.3 native, ARMv7 and ARM64 SDK builds passed; validator reported 0 errors and
 0 warnings. Host simulator passed 20/20, including 32/512 frame blocks,
 in-place processing, finite output and all-parameter state restore. Average
-desktop timing: 1.04% of a 128-frame block, orientation only. No Force hardware
-deployment or performance measurement was performed.
+desktop timing: 0.86% of a 128-frame block, orientation only. Generated UI has
+10 tabs; SDK warns that names over eight characters may truncate and tabs past
+six are not validated on hardware. Conditional algorithm visibility and
+hardware UI validation remain before release. No Force deployment or ARM
+hardware performance measurement occurred.
