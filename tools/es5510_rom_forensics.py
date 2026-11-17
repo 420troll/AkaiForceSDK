@@ -102,7 +102,7 @@ def scan_stream(data: bytes, offset: int, permutation: tuple[int, ...]) -> dict[
     }
 
 
-def _diff(a: bytes, b: bytes) -> dict[str, Any]:
+def _diff(a: bytes, b: bytes, regions: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     if len(a) != len(b):
         return {"same_size": False, "a_size": len(a), "b_size": len(b)}
     changed = [i for i, (x, y) in enumerate(zip(a, b)) if x != y]
@@ -118,7 +118,7 @@ def _diff(a: bytes, b: bytes) -> dict[str, Any]:
         n = sum(x != y for x, y in zip(a[start:start + bucket_size], b[start:start + bucket_size]))
         if n:
             buckets.append({"start": start, "end_exclusive": min(len(a), start + bucket_size), "changed_bytes": n})
-    return {
+    result = {
         "same_size": True,
         "size": len(a),
         "changed_bytes": len(changed),
@@ -128,6 +128,21 @@ def _diff(a: bytes, b: bytes) -> dict[str, Any]:
         "contiguous_changed_ranges": len(ranges),
         "changed_4k_buckets": buckets,
     }
+    if regions is not None:
+        result["named_region_changes"] = []
+        covered = set()
+        for region in regions:
+            start, end = region["start"], region["end_exclusive"]
+            in_region = [i for i in changed if start <= i < end]
+            covered.update(range(start, end))
+            result["named_region_changes"].append({
+                "name": region["name"], "start": start, "end_exclusive": end,
+                "changed_bytes": len(in_region),
+                "first_changed_offset": in_region[0] if in_region else None,
+                "last_changed_offset": in_region[-1] if in_region else None,
+            })
+        result["changed_bytes_outside_named_regions"] = sum(i not in covered for i in changed)
+    return result
 
 
 def analyze_rom(path: Path, compare: Path | None = None) -> dict[str, Any]:
@@ -190,11 +205,16 @@ def analyze_rom(path: Path, compare: Path | None = None) -> dict[str, Any]:
     }
     if compare:
         other = compare.read_bytes()
+        named_regions = [
+            {"name": table["name"], "start": table["start"],
+             "end_exclusive": table["end_exclusive"]}
+            for table in label_tables
+        ]
         result["comparison"] = {
             "other_file_name": compare.name,
             "other_size_bytes": len(other),
             "other_sha256": hashlib.sha256(other).hexdigest(),
-            **_diff(data, other),
+            **_diff(data, other, named_regions),
         }
     return result
 

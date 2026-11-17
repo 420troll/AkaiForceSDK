@@ -74,6 +74,21 @@ class RomForensicsTests(unittest.TestCase):
         self.assertEqual(table["end_exclusive"], 2550)
         self.assertNotIn("instructions", report)
 
+    def test_revision_diff_maps_changes_against_detected_label_region(self):
+        records = [("3Effect %02d" % i).encode("ascii").ljust(51, b"\x00")
+                   for i in range(50)]
+        a = bytearray(b"".join(records) + b"tail-data")
+        b = bytearray(a)
+        b[2] ^= 1
+        b[2552] ^= 1
+        with tempfile.TemporaryDirectory() as tmp:
+            pa, pb = Path(tmp) / "v1.bin", Path(tmp) / "v2.bin"
+            pa.write_bytes(a); pb.write_bytes(b)
+            report = analyze_rom(pa, pb)
+        comparison = report["comparison"]
+        self.assertEqual(comparison["named_region_changes"][0]["changed_bytes"], 1)
+        self.assertEqual(comparison["changed_bytes_outside_named_regions"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
