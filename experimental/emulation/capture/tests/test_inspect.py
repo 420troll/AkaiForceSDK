@@ -22,6 +22,8 @@ class CaptureInspectorTests(unittest.TestCase):
         self.assertEqual(result["source_format"], "neutral-hex-48-bit-word-list")
         self.assertEqual(result["instruction_count"], 2)
         self.assertEqual(result["end_opcode_indices_candidate"], [0])
+        self.assertEqual(result["instructions"][0]["decoded_mame_fields"]["alu_op"], "END")
+        self.assertEqual(result["instructions"][1]["decoded_mame_fields"]["alu_op"], "MOV")
 
     def test_eps16_trace_records_do_not_claim_full_gpr_image(self):
         result = self.capture(

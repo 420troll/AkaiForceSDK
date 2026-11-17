@@ -15,8 +15,8 @@ python3 tools/es5510_capture_inspect.py /path/to/local-es5510-trace.txt \
   --json-output /path/to/local-inspection.json
 ```
 
-The tool checks syntax, contiguous indices, the 160-word program capacity,
-48-bit width, and potential END opcodes. It does not accept ROM, OS disk,
+The inspector checks syntax, contiguous indices, the 160-word program capacity,
+48-bit width, MAME-field decoding and potential END opcodes. It does not accept ROM, OS disk,
 firmware, Waveboy effect files, or undocumented binary containers. It does not
 execute the result. The optional JSON contains the instruction words and can
 therefore contain copyrighted effect material; keep it local unless you have
@@ -34,3 +34,12 @@ The test suite uses generated synthetic records only:
 ```sh
 python3 -m unittest discover -s experimental/emulation/capture/tests -v
 ```
+
+For a privately obtained ROM image, `tools/es5510_rom_forensics.py` is a
+separate metadata-only scanner. It reports a SHA-256, selected printable
+algorithm labels, candidate regular label-table geometry, version differences,
+and statistics for explicitly listed raw 48-bit packing hypotheses. It never
+outputs candidate instruction words or disassembly. A candidate scan is not
+proof of an executable program; see `docs/DP4_ROM_MICROCODE_FORENSICS.md` for
+the DP/4 results and limitations. Keep generated metadata reports private if
+they contain proprietary labels.

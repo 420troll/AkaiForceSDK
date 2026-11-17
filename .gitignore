@@ -8,6 +8,8 @@ cmake-build-*/
 *.so
 *.dll
 *.dylib
+__pycache__/
+*.py[cod]
 
 # Generated plugin packages and test renders
 dist/

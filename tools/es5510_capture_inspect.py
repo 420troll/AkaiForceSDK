@@ -16,6 +16,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
+try:
+    from .es5510_decode import decode_word
+except ImportError:  # Script invocation: python tools/es5510_capture_inspect.py
+    from es5510_decode import decode_word
+
 
 MAX_WORDS = 160
 MAX_INPUT_BYTES = 64 * 1024
@@ -60,13 +65,15 @@ def inspect_capture(path: Path) -> dict[str, Any]:
             if index != expected_index:
                 raise CaptureError(f"line {line_no}: trace index {index} is not contiguous; expected {expected_index}")
             word = int(match.group("word"), 16)
-            words.append({
+            entry = {
                 "index": index,
                 "instruction_hex": f"{word:012x}",
                 # rom_probe prints es5510_gpr[index], which is not a full GPR
                 # initialization image and must not be used as one.
                 "trace_gpr_at_same_index_hex": match.group("gpr").lower(),
-            })
+            }
+            entry["decoded_mame_fields"] = decode_word(word)
+            words.append(entry)
         source_format = "eps16-trace-es5510-program-lines"
     else:
         for record_index, (line_no, line) in enumerate(populated):
@@ -86,7 +93,8 @@ def inspect_capture(path: Path) -> dict[str, Any]:
             word = int(match.group("word"), 16)
             if word >= (1 << 48):
                 raise CaptureError(f"line {line_no}: instruction is wider than 48 bits")
-            words.append({"index": record_index, "instruction_hex": f"{word:012x}"})
+            words.append({"index": record_index, "instruction_hex": f"{word:012x}",
+                          "decoded_mame_fields": decode_word(word)})
         source_format = "neutral-hex-48-bit-word-list"
 
     if not words:
