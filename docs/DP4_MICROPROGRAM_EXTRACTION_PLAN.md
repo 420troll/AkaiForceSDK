@@ -10,6 +10,8 @@ No verified relationship currently connects a particular U54 byte range to the i
 
 This is not an algorithm recovery. No extracted factory program has been run or compared against a DP/4 output.
 
+The follow-up U56 static pass is recorded in [DP4_U56_LOADER_ANALYSIS.md](DP4_U56_LOADER_ANALYSIS.md). It found a stable status/data sender on the reset path, but its packets are sourced from U56 and it cannot be identified as the ES5510 loader.
+
 ## Verified discoveries
 
 ### U54 revision structure
