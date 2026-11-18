@@ -1,8 +1,8 @@
 # DP/4 U56 loader investigation
 
 Branch: `issue11-dp4-rom-forensics`  
-Starting commit: `988281c9d539c2ff27239850f3f332c3f7467c12`  
-Analysis date: 2026-11-17  
+Starting commit: `e3cc99bf77bb360766d4eba2eeb5af33fff43f3f`
+Analysis date: `2026-11-18`
 ROMs: private DP4 U56 v1.06 and v1.15 images; hashes are in [DP4_ROM_MICROCODE_FORENSICS.md](DP4_ROM_MICROCODE_FORENSICS.md). No ROM, extracted binary, or full disassembly is included here.
 
 ## Result
@@ -11,21 +11,23 @@ ROMs: private DP4 U56 v1.06 and v1.15 images; hashes are in [DP4_ROM_MICROCODE_F
 
 The remaining algorithm-selection path contains an indirect `JSR 0,X` dispatch. Its target depends on a function pointer in runtime data structures; with the base DP/4 CPU, ROM mapping, and U54 bank mapping unknown, the pointer tables cannot be assigned to code or U54 content confidently. The likely U54 loader may be reachable through that dispatch, but that remains a hypothesis.
 
-## REA and disassembler availability
+## Analysis environment and tool evidence
 
 | Check | Result |
 |---|---|
-| REA package | `rea-agents` 6.9.0, cached and invocable via `npx` |
-| REA MCP server self-check | `npx rea-agents mcp doctor --json`: healthy; 255/255 expected tools and 6/6 prompts observed |
-| Codex runtime tool registry at start of this turn | No REA tools exposed |
-| Codex MCP registration | Registered globally using REA's `mcp add`; config backup retained at `/home/gamer/.codex/config.toml.rea.backup`. Registration is for a subsequent/restarted Codex session; the current tool registry did not hot-reload. |
-| Ghidra | Not installed; `ghidra`, `analyzeHeadless`, and `ghidraRun` are absent. REA's Ghidra provider reports `not_configured`, requiring Ghidra 12.1+ and `GHIDRA_INSTALL_DIR`. Ghidra was not installed. |
-| REA firmware-region scan | Tried on U56 v1.15; unavailable because `REA_BINWALK_COMMAND` is not set and no caller-supplied `binwalk` executable is configured. |
-| Disassembler used | Existing private Capstone 5.0.6 installation, M680X 6801 mode. The mode is a working ISA hypothesis supported by the DP/4+ 63803 clue, not confirmed base-DP/4 silicon identification. 6800, 6801, 6301, and 6811 modes decode the examined routines identically. |
+| Correct project | `/tmp/trollfx-issue4`, branch `issue11-dp4-rom-forensics`, starting commit `e3cc99bf77bb360766d4eba2eeb5af33fff43f3f`; linked worktree of `/mnt/c/Users/Gamer/TROLLfx-Force-SDK/.git`, remote `https://github.com/420troll/AkaiForceSDK.git`. |
+| Private ROMs | Recovered under `/tmp/dp4-rom-forensics/extracted/{v106,v115}`; all four U54/U56 SHA-256 values match `DP4_ROM_MICROCODE_FORENSICS.md`. No payload or full reports are in this repository. |
+| REA package / direct MCP | Cached `rea-agents` 6.9.0 at `/home/gamer/.npm/_npx/9b9809298fe40d2c/node_modules/rea-agents`; direct MCP initialize and `tools/list` succeeded (255 tools), `prompts/list` returned 6. |
+| Active Codex config | Windows Codex uses `/mnt/c/Users/Gamer/.codex/config.toml`; it now registers `rea` via `C:\\Windows\\System32\\wsl.exe` and the cached WSL Node/script paths. WSL config is `/home/gamer/.codex/config.toml`. The current session registry did not hot-reload; restart Codex to expose newly registered tools. |
+| REA functionality actually exercised | REA self-check/doctor and tool/prompt discovery; attempted `open_binary` on U56 with `MC6801`, rejected by REA 6.9.0 schema (accepted architecture enum omits 6800/6801). Thus REA is configured and its MCP protocol works directly, but it could not analyze this CPU image. No REA firmware result is claimed. |
+| Ghidra | Installed privately at `/tmp/dp4-rom-forensics/tooling/ghidra-install/ghidra_12.1.4_PUBLIC`, with Temurin JDK 21 and isolated `GhidraMC6800` extension v1.2. Headless analyzer and REA doctor passed. Extension supplies `MC6801:BE:16:default` and `HD6301:BE:16:default`; no system or repository environment was overwritten. |
+| Ghidra analysis | Ghidra headless analyzed both revisions in MC6801 mode and v1.15 in MC6800 and HD6301 modes. Private reports are under `/tmp/dp4-rom-forensics/reports`; analysis used imported 32 KiB images at assumed base `0x8000`, reset vector `0xFFFE`. |
+
+The checked-in helper `tools/dp4_ghidra/run_u56.sh` imports a caller-supplied U56 image into a new Ghidra project under a caller-owned private work directory and writes a report there. It never copies an image into the repository. `experimental/emulation/capture/tests/test_dp4_ghidra_smoke.py` is an opt-in integration test built from synthetic bytes.
 
 Capstone input mapping used for this static pass is also hypothetical: a 32 KiB U56 image at CPU `0x8000..0xFFFF`, with the reset vector at image offset `0x7FFE`. The vector is `0x84E4`, mapping to file offset `0x04E4`. The DP/4+ schematic cannot verify the base DP/4 map or CPU part.
 
-REA's MCP process is healthy, but the current Codex session could not invoke those MCP tools because its tool registry was fixed before the global registration. The analysis below used REA CLI health/capability checks and Capstone; it did not use Ghidra or claim a Ghidra decompilation.
+The U56 work below uses Ghidra's MC6801 disassembly, cross-references, computed-flow classification and basic blocks, compared across v1.06/v1.15. The processor selection is a decoding model, not proof of the base DP/4 silicon. REA's own raw-binary provider cannot currently accept this processor; restarting Codex is still required for its registered tools to appear in the MCP registry.
 
 ## Reset and boot path evidence
 
@@ -83,13 +85,17 @@ In v1.15 startup/main-loop code, an object walk reaches an indirect call at logi
 - U54 bank-select and gate-array behavior;
 - observed writes to the ES5510 host interface or an emulator driver that models the same path.
 
-The entry bytes and static direct calls alone do not provide these values. Ghidra would improve flow graphs after choosing a valid CPU language and memory map, but it would not make unresolved bank/indirect data references known. In this environment it was not available.
+Ghidra classifies the instruction as a computed call but records no destination edge. In v1.06 the matching site is `0x85E7`; in v1.15 it is `0x85EA`. Around it, the code follows object fields (`LDX 7,X`, then `LDX 0,X`) before `JSR 0,X`; the pointer value is runtime data. Ghidra reports 55 functions and 1,323 instructions in v1.06, and 55 functions / 1,326 instructions in v1.15 under the same assumed map. The call remains unresolved; static CFG does not recover the descriptor contents or any banked U54 mapping.
+
+Language comparison on v1.15 yields only 2 functions / 59 instructions in base MC6800 mode, versus 55 / 1,326 in MC6801 and 55 / 1,326 in HD6301 mode. Reachable code includes 6801-family instructions such as `ABX` and `MUL` (including `MUL` in the function at `0x8DE9`). This supports an MC6801/HD6301-compatible ISA model over base MC6800. It does not distinguish the physical silicon; DP/4+ 63803 remains a comparison clue only.
 
 ## Finding and confidence
 
 | Finding | Confidence |
 |---|---|
-| U56 v1.06 and v1.15 have a stable 18-byte packet sender and 11-byte status/data writer at the offsets listed above | **High** for the bytes and Capstone M6801 decode; **medium** for the assumed CPU address mapping |
+| U56 v1.06 and v1.15 have a stable 18-byte packet sender and 11-byte status/data writer at the offsets listed above | **High** for bytes and Ghidra/Capstone decode; **medium** for assumed CPU address mapping |
+| Host ISA is 6801/HD6301-compatible rather than base 6800 | **Strongly supported** by reachable `ABX`/`MUL` and Ghidra language comparison; exact CPU part unresolved |
+| `JSR 0,X` target at v1.06 `0x85E7` / v1.15 `0x85EA` | **Unresolved**; computed call has no static target edge |
 | The reset path calls a routine that sends two 8-byte U56-resident payloads with IDs 13 and 14, then sends two short values | **High** for the static call path under the assumed memory map |
 | `$1800/$1801` are a ready/status plus data peripheral | **Medium** from the access pattern |
 | That peripheral is the 63B50/UART/MIDI | **Low/unresolved**; DP/4+ schematic is a different model and does not map these addresses |
@@ -102,7 +108,7 @@ Capture a base DP/4's U54 bus and ES5510 host bus simultaneously during power-on
 
 ## Reproduction notes
 
-Private analysis used the locally extracted ROMs under `/tmp/dp4-rom-forensics` and Capstone 5.0.6, installed only under `/tmp/dp4-rom-forensics/capstone`. No code or ROM payload from the private directory is included in the repository. The exact Capstone command is reproducible as:
+Private analysis used locally extracted ROMs under `/tmp/dp4-rom-forensics`. Ghidra scripts are published under `tools/dp4_ghidra/`; use the runner documented there with a private work directory. The report files and projects stay outside the repository. No code or ROM payload from the private directory is included here. The exact Capstone spot-check remains reproducible as:
 
 ```sh
 PYTHONPATH=/tmp/dp4-rom-forensics/capstone python3 - <<'PY'
@@ -115,7 +121,7 @@ for insn in cpu.disasm(rom[0x3385:0x3385 + 11], 0xB385):
 PY
 ```
 
-This is a linear disassembly of a candidate span, not a complete loadable Ghidra project or validated firmware emulation. Existing synthetic repository tests cover the ROM scanner and MAME-field decoder; no new decoder or trace tool was added because the actual loader protocol is still unknown.
+This is a linear disassembly spot-check, not a validated firmware emulation. Ghidra's computed-call report likewise constrains but does not resolve the dynamic target. A synthetic Ghidra smoke test exercises import, reset-vector marking, analysis, and report generation without proprietary firmware.
 
 ## Sources
 
