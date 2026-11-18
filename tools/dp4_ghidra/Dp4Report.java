@@ -58,6 +58,25 @@ public class Dp4Report extends GhidraScript {
                 }
             }
 
+            // Preserve enough caller context to audit X-register provenance around
+            // the known computed calls in each firmware revision.
+            for (long site : new long[] {0x85e7, 0x85ea}) {
+                Instruction call = currentProgram.getListing().getInstructionAt(toAddr(site));
+                if (call == null || !call.getFlowType().isComputed()) continue;
+                Function owner = currentProgram.getFunctionManager()
+                    .getFunctionContaining(toAddr(site));
+                out.println("INDIRECT_CALL " + toAddr(site) + " " + call +
+                    " owner=" + (owner == null ? "<none>" : owner.getEntryPoint()));
+                Address start = toAddr(site).subtract(0x70);
+                Address end = toAddr(site).add(8);
+                InstructionIterator context = currentProgram.getListing().getInstructions(
+                    new AddressSet(start, end), true);
+                while (context.hasNext()) {
+                    Instruction line = context.next();
+                    out.println("X_CONTEXT " + line.getAddress() + " " + line);
+                }
+            }
+
             for (long peripheral : new long[] {0x1800, 0x1801}) {
                 Address address = toAddr(peripheral);
                 out.println("XREFS_TO " + address);
@@ -70,10 +89,34 @@ public class Dp4Report extends GhidraScript {
 
             InstructionIterator all = currentProgram.getListing().getInstructions(true);
             int instructionCount = 0;
+            // These are values listed in the service-manual ESP event table.
+            // A matching immediate is only a search candidate, not proof that
+            // this instruction generates a diagnostic event.
+            int[] manualEventCodeValues = {0x30, 0x31, 0x32, 0x33, 0x35, 0x36, 0x37, 0x38,
+                0x40, 0x41, 0x42, 0x43, 0x45, 0x46, 0x47, 0x48,
+                0x50, 0x51, 0x52, 0x53, 0x60, 0x61, 0x62, 0x63,
+                0x70, 0x71, 0x72, 0x73, 0x80, 0x81, 0x82, 0x83,
+                0x85, 0x86, 0x87, 0x88, 0x90, 0x91, 0x92, 0x93};
             while (all.hasNext()) {
                 Instruction instruction = all.next();
                 instructionCount++;
+                out.println("INSTRUCTION_BOUNDARY " + instruction.getAddress());
                 String mnemonic = instruction.getMnemonicString();
+                String operands = instruction.getDefaultOperandRepresentation(0);
+                if ((operands.contains(",X") || operands.contains(", X")) &&
+                    (operands.startsWith("0x7") || operands.startsWith("7,"))) {
+                    out.println("INDEXED_X_OFFSET7 " + instruction.getAddress() + " " + instruction);
+                }
+                for (int operand = 0; operand < instruction.getNumOperands(); operand++) {
+                    String representation = instruction.getDefaultOperandRepresentation(operand);
+                    for (int code : manualEventCodeValues) {
+                        if (representation.equalsIgnoreCase("#0x" + Integer.toHexString(code))) {
+                            out.println("IMMEDIATE_CONSTANT_CANDIDATE " + instruction.getAddress() +
+                                " code=0x" + Integer.toHexString(code) + " " + instruction);
+                            break;
+                        }
+                    }
+                }
                 if (instruction.getFlowType().isComputed() && !mnemonic.equals("SWI")) {
                     out.println("COMPUTED_FLOW " + instruction.getAddress() + " " + instruction);
                 }

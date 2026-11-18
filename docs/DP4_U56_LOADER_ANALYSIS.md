@@ -9,7 +9,7 @@ ROMs: private DP4 U56 v1.06 and v1.15 images; hashes are in [DP4_ROM_MICROCODE_F
 
 **No ES5510 factory-program loader routine is identified.** A stable, byte-for-byte-identical U56 routine pair was found that transmits short packets through a memory-mapped status/data pair. Its reset-path caller sources two 8-byte blocks from U56 ROM itself. This is verified firmware I/O, but there is no evidence that it reads U54 or writes ES5510 instruction/GPR memory. It is a candidate peripheral initializer, not a decoded DSP loader.
 
-The remaining algorithm-selection path contains an indirect `JSR 0,X` dispatch. Its target depends on a function pointer in runtime data structures; with the base DP/4 CPU, ROM mapping, and U54 bank mapping unknown, the pointer tables cannot be assigned to code or U54 content confidently. The likely U54 loader may be reachable through that dispatch, but that remains a hypothesis.
+The DP/4 service manual identifies the host CPU as a 6803 at U52. The U56 instruction-family decode is consistent with this 6801-family CPU. The CPU address map and U54 bus mapping are still unverified, so this corrects the processor-family uncertainty without resolving the DSP loader.
 
 ## Analysis environment and tool evidence
 
@@ -18,16 +18,15 @@ The remaining algorithm-selection path contains an indirect `JSR 0,X` dispatch. 
 | Correct project | `/tmp/trollfx-issue4`, branch `issue11-dp4-rom-forensics`, starting commit `e3cc99bf77bb360766d4eba2eeb5af33fff43f3f`; linked worktree of `/mnt/c/Users/Gamer/TROLLfx-Force-SDK/.git`, remote `https://github.com/420troll/AkaiForceSDK.git`. |
 | Private ROMs | Recovered under `/tmp/dp4-rom-forensics/extracted/{v106,v115}`; all four U54/U56 SHA-256 values match `DP4_ROM_MICROCODE_FORENSICS.md`. No payload or full reports are in this repository. |
 | REA package / direct MCP | Cached `rea-agents` 6.9.0 at `/home/gamer/.npm/_npx/9b9809298fe40d2c/node_modules/rea-agents`; direct MCP initialize and `tools/list` succeeded (255 tools), `prompts/list` returned 6. |
-| Active Codex config | Windows Codex uses `/mnt/c/Users/Gamer/.codex/config.toml`; it now registers `rea` via `C:\\Windows\\System32\\wsl.exe` and the cached WSL Node/script paths. WSL config is `/home/gamer/.codex/config.toml`. The current session registry did not hot-reload; restart Codex to expose newly registered tools. |
-| REA functionality actually exercised | REA self-check/doctor and tool/prompt discovery; attempted `open_binary` on U56 with `MC6801`, rejected by REA 6.9.0 schema (accepted architecture enum omits 6800/6801). Thus REA is configured and its MCP protocol works directly, but it could not analyze this CPU image. No REA firmware result is claimed. |
+| REA MCP in this session | REA-specific tools are absent from the active Codex MCP tool registry. Earlier direct initialize/tool discovery succeeded, but this session cannot invoke those tools. No REA analysis result is claimed for this run. |
 | Ghidra | Installed privately at `/tmp/dp4-rom-forensics/tooling/ghidra-install/ghidra_12.1.4_PUBLIC`, with Temurin JDK 21 and isolated `GhidraMC6800` extension v1.2. Headless analyzer and REA doctor passed. Extension supplies `MC6801:BE:16:default` and `HD6301:BE:16:default`; no system or repository environment was overwritten. |
 | Ghidra analysis | Ghidra headless analyzed both revisions in MC6801 mode and v1.15 in MC6800 and HD6301 modes. Private reports are under `/tmp/dp4-rom-forensics/reports`; analysis used imported 32 KiB images at assumed base `0x8000`, reset vector `0xFFFE`. |
 
 The checked-in helper `tools/dp4_ghidra/run_u56.sh` imports a caller-supplied U56 image into a new Ghidra project under a caller-owned private work directory and writes a report there. It never copies an image into the repository. `experimental/emulation/capture/tests/test_dp4_ghidra_smoke.py` is an opt-in integration test built from synthetic bytes.
 
-Capstone input mapping used for this static pass is also hypothetical: a 32 KiB U56 image at CPU `0x8000..0xFFFF`, with the reset vector at image offset `0x7FFE`. The vector is `0x84E4`, mapping to file offset `0x04E4`. The DP/4+ schematic cannot verify the base DP/4 map or CPU part.
+Capstone input mapping used for this static pass is also hypothetical: a 32 KiB U56 image at CPU `0x8000..0xFFFF`, with the reset vector at image offset `0x7FFE`. The vector is `0x84E4`, mapping to file offset `0x04E4`. The service manual identifies a 6803 at U52, consistent with the decoded instruction family, but does not verify the ROM address window or chip-select mapping.
 
-The U56 work below uses Ghidra's MC6801 disassembly, cross-references, computed-flow classification and basic blocks, compared across v1.06/v1.15. The processor selection is a decoding model, not proof of the base DP/4 silicon. REA's own raw-binary provider cannot currently accept this processor; restarting Codex is still required for its registered tools to appear in the MCP registry.
+The U56 work below uses Ghidra's MC6801 disassembly, cross-references, computed-flow classification and basic blocks, compared across v1.06/v1.15. The language is a decoding model; it agrees with the service manual's 6803-at-U52 identification but does not prove the ROM map. See [DP/4 hardware architecture audit](DP4_HARDWARE_ARCHITECTURE_AUDIT.md) for the evidence and remaining bus-map unknowns.
 
 ## Reset and boot path evidence
 
@@ -80,21 +79,22 @@ Therefore, there is no supported basis to identify this as the factory microprog
 
 In v1.15 startup/main-loop code, an object walk reaches an indirect call at logical `0x85EA` (file `0x05EA`): the code obtains a pointer through fields in an object and executes `JSR 0,X`. The routine targets are runtime values. Resolving them requires:
 
-- the actual base DP/4 memory map and CPU variant;
-- initialized object/descriptor contents, including any data copied from U54;
+- the verified U56 CPU address mapping and initialized object/descriptor contents, including any data copied from U54;
 - U54 bank-select and gate-array behavior;
 - observed writes to the ES5510 host interface or an emulator driver that models the same path.
 
 Ghidra classifies the instruction as a computed call but records no destination edge. In v1.06 the matching site is `0x85E7`; in v1.15 it is `0x85EA`. Around it, the code follows object fields (`LDX 7,X`, then `LDX 0,X`) before `JSR 0,X`; the pointer value is runtime data. Ghidra reports 55 functions and 1,323 instructions in v1.06, and 55 functions / 1,326 instructions in v1.15 under the same assumed map. The call remains unresolved; static CFG does not recover the descriptor contents or any banked U54 mapping.
 
-Language comparison on v1.15 yields only 2 functions / 59 instructions in base MC6800 mode, versus 55 / 1,326 in MC6801 and 55 / 1,326 in HD6301 mode. Reachable code includes 6801-family instructions such as `ABX` and `MUL` (including `MUL` in the function at `0x8DE9`). This supports an MC6801/HD6301-compatible ISA model over base MC6800. It does not distinguish the physical silicon; DP/4+ 63803 remains a comparison clue only.
+Language comparison on v1.15 yields only 2 functions / 59 instructions in base MC6800 mode, versus 55 / 1,326 in MC6801 and 55 / 1,326 in HD6301 mode. Reachable code includes 6801-family instructions such as `ABX` and `MUL` (including `MUL` in the function at `0x8DE9`). This supports an MC6801/HD6301-compatible ISA model over base MC6800 and agrees with the manual's identification of a 6803 at U52. Exact CPU suffix and physical ROM decode remain to be verified.
 
 ## Finding and confidence
 
 | Finding | Confidence |
 |---|---|
 | U56 v1.06 and v1.15 have a stable 18-byte packet sender and 11-byte status/data writer at the offsets listed above | **High** for bytes and Ghidra/Capstone decode; **medium** for assumed CPU address mapping |
-| Host ISA is 6801/HD6301-compatible rather than base 6800 | **Strongly supported** by reachable `ABX`/`MUL` and Ghidra language comparison; exact CPU part unresolved |
+| U52 host CPU is a Motorola 6803-family part | **Confirmed by the base DP/4 service manual** identifying “6803 (U52)” on printed p. 6; exact suffix/package marking not established |
+| U56 code decodes in the 6801-family instruction set | **Strongly supported** by reachable `ABX`/`MUL` and Ghidra language comparison; consistent with 6803 |
+| U56 ROM CPU window/reset-vector mapping | **Unresolved**; `$8000–$FFFF` remains an analysis assumption despite the valid-looking reset vector |
 | `JSR 0,X` target at v1.06 `0x85E7` / v1.15 `0x85EA` | **Unresolved**; computed call has no static target edge |
 | The reset path calls a routine that sends two 8-byte U56-resident payloads with IDs 13 and 14, then sends two short values | **High** for the static call path under the assumed memory map |
 | `$1800/$1801` are a ready/status plus data peripheral | **Medium** from the access pattern |
@@ -104,7 +104,7 @@ Language comparison on v1.15 yields only 2 functions / 59 instructions in base M
 
 ## Shortest next observation
 
-Capture a base DP/4's U54 bus and ES5510 host bus simultaneously during power-on and selection of one simple algorithm. The minimum decisive data are U54 address/data/enable, CPU reset/bank-select, and selected ES5510 host address/data/read-write/chip-select/HALT signals with a shared timebase. First identify the actual CPU and board revision from the installed package marking and a base-DP/4 schematic. Then map the U56 startup and indirect dispatch with that verified memory map. Do not infer a loader from the stable `$1800/$1801` helper alone.
+Capture a base DP/4's U54 bus and ESP host activity simultaneously during power-on and selection of one simple algorithm. First document the board revision and verify U52/U54/U56/ESP package pins against base-board documentation. The capture must include U52 address/data/control/reset/clock, U54 address/data/enable, and each ESP host address/data/control/halt signal on one timebase; the actual base-board net names and pins must be identified before probing. This gives the missing CPU map and U54-to-ESP transaction evidence. Do not infer a loader from the stable `$1800/$1801` helper alone.
 
 ## Reproduction notes
 
@@ -125,6 +125,6 @@ This is a linear disassembly spot-check, not a validated firmware emulation. Ghi
 
 ## Sources
 
-- [DP/4 Service Manual](https://www.synfo.nl/servicemanuals/Ensoniq/ENSONIQ_DP-4_SERVICE_MANUAL.pdf) — confirms U56 is OS ROM and U54 is VCODE/UCODE; does not identify base-model CPU or memory map.
+- [DP/4 Service Manual](https://www.vintagesynthparts.com/wp-content/uploads/2016/08/Ensoniq-DP4-Service-Manual.pdf) — identifies “6803 (U52)” on printed p. 6 and U56 as OS ROM / U54 as UCODE on pp. 13 and 19; it does not provide the base digital-board bus map. See [hardware architecture audit](DP4_HARDWARE_ARCHITECTURE_AUDIT.md).
 - [DP/4+ Rev C digital-board schematic](https://convexoptimization.com/EnsoniqDP4/Ensoniq%20DP4%2B%2C%20Digital%20Board%2C%20401024201%20Rev%20C.pdf) — comparison only; identifies 63803, separate OS/UCODE ROMs, 63B50 serial/I/O and ESP sections, but not the base DP/4 map.
 - [MAME ES5510 host implementation](https://github.com/mamedev/mame/blob/8be57cdc5f44ab830dff44c06dd39f24190742d4/src/devices/cpu/es5510/es5510.cpp) — generic device behavior at pinned BSD-3-Clause source commit, not a DP/4 host-driver trace.

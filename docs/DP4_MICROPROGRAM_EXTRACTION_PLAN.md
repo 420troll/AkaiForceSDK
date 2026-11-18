@@ -1,12 +1,13 @@
 # DP/4 factory microprogram extraction plan
 
 Research branch: `issue11-dp4-rom-forensics`  
-Baseline: `4f67b516641e8fc5ead910e7614436ec10708b51`  
-Research update: 2026-11-17
+Baseline: `9f0f6b98318915871db9fce2dacbfbe8bc73d86d`
+
+Research update: 2026-11-18
 
 ## Conclusion
 
-No verified relationship currently connects a particular U54 byte range to the instruction memory of a physical DP/4 ES5510. U54 is verified as the VCODE/UCODE EPROM; MAME's ES5510 device model explains how a host can write instruction memory and GPRs; MAME does **not** model the complete DP/4. U56 can be mapped plausibly and partially decoded, but the actual DP/4 host processor and the ROM-to-ESP upload routine remain unconfirmed. The shortest evidence-producing next step is a synchronized, read-only bus capture on a DP/4 while booting and selecting one effect, capturing the U54 ROM bus and the selected ES5510 host bus together.
+No verified relationship currently connects a particular U54 byte range to the instruction memory of a physical DP/4 ES5510. U54 is verified as the VCODE/UCODE EPROM; MAME's ES5510 device model explains how a host can write instruction memory and GPRs; MAME does **not** model the complete DP/4. The base DP/4 service manual identifies a 6803 at U52, consistent with the U56 6801-family decode. The CPU address map, base-board ROM/DSP bus wiring, and ROM-to-ESP upload routine remain unconfirmed. See [DP/4 hardware architecture audit](DP4_HARDWARE_ARCHITECTURE_AUDIT.md). The shortest evidence-producing next step is a synchronized, read-only bus capture on a DP/4 while booting and selecting one effect, capturing the U54 ROM bus and selected ESP host activity together.
 
 This is not an algorithm recovery. No extracted factory program has been run or compared against a DP/4 output.
 
@@ -31,10 +32,10 @@ The six tested raw 48-bit packing/lane hypotheses still produce median one-word 
 
 ### U56 identification and startup
 
-- The service manual verifies U56 is the operating-system EPROM, but the available DP/4 manual pages do not name the controller part or provide its full address-decoding schematic.
+- The service manual identifies U52 as a 6803 (printed p. 6) and U56 as the operating-system EPROM. It does not provide the full CPU, ROM, or ESP address-decoding schematic.
 - U56 is 32,768 bytes. Its last two bytes are `0x84E4` in both versions. If the ROM is mapped at CPU address `0x8000..0xFFFF`, the vector at image offset `0x7FFE` is the 6800-family reset vector and points to image offset `0x04E4`. This is a plausible map, not a verified DP/4 memory map.
-- Ghidra 12.1.4 with the isolated GhidraMC6800 v1.2 extension reaches 55 functions in each ROM using `MC6801:BE:16:default`; v1.15 contains reachable `ABX` and `MUL`. In the same image, base `MC6800` mode reaches only 2 functions / 59 instructions, while `MC6801` and `HD6301` reach 55 / 1,326. This supports a 6801/HD6301-compatible instruction set over base 6800, but does not identify the base DP/4 silicon or distinguish 6801 from HD6301/6303-compatible parts. See the updated [U56 loader analysis](DP4_U56_LOADER_ANALYSIS.md).
-- The DP/4+ Rev C digital-board schematic is a separate-model clue: it names a Hitachi 63803 microprocessor and a 27256 O/S ROM, and shows the UCODE ROM separately. The 63803 is 6801-compatible according to the Hitachi family documentation. Do **not** project that DP/4+ part number or memory map onto a base DP/4 without a base-model schematic or chip marking.
+- Ghidra 12.1.4 with the isolated GhidraMC6800 v1.2 extension reaches 55 functions in each ROM using `MC6801:BE:16:default`; v1.15 contains reachable `ABX` and `MUL`. In the same image, base `MC6800` mode reaches only 2 functions / 59 instructions, while `MC6801` and `HD6301` reach 55 / 1,326. This supports a 6801-family instruction set, consistent with the manual's 6803 identification. The precise CPU suffix and physical ROM decode still need board-level confirmation. See the updated [U56 loader analysis](DP4_U56_LOADER_ANALYSIS.md).
+- The DP/4+ Rev C digital-board schematic is a separate-model comparison: it names a 63803 microprocessor, a 27256 O/S ROM, a banked 27C2001 ROM, and shows the UCODE ROM separately. Its ROM bank and ESP signal wiring must not be projected onto the base DP/4.
 - Under the assumed map, startup begins at `0x84E4` (file offset `0x04E4`), initializes the stack and several low memory locations, calls helpers, clears RAM ranges and writes I/O-looking addresses including `0x1800/0x1801`. Ghidra's reachable CFG reports an indirect `JSR 0,X` at v1.06 `0x85E7` and v1.15 `0x85EA` with no static destination edge. The pointer is loaded through runtime object fields, so static analysis does not resolve it. No call sequence was tied to ES5510 program writes or U54 source offsets.
 - The service manual reports UCODE tag, instruction/table/GPR verify, and download-verify failures. This supports that the firmware validates multiple structured categories; it does not reveal the U54 serialization or transfer routine.
 
@@ -53,7 +54,7 @@ The Ensoniq MAME source tree has ES5510 device instances in other system drivers
 
 ## What is still unresolved
 
-1. The exact base DP/4 host CPU part, clock and reset/vector mapping.
+1. The exact U52 6803 variant/package, clock, and verified U56 reset/vector mapping.
 2. The base DP/4 CPU address map, U54 bank/enable logic, and whether U54 reads are direct, banked, interleaved, or copied through another memory region.
 3. The physical ES5510 revision/package pinout used on the target base DP/4 board and the exact host address/data/strobe connections.
 4. The DP/4 host's ESP register transactions, including whether it uses six instruction-latch byte writes followed by a selector, combined writes, bursts, or a different access path.
