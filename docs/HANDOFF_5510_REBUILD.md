@@ -96,5 +96,7 @@ only the `TROLLfx - VST - 5510` folder. Leave V0.3/V0.4 and RTA untouched.
 
 ## Git status
 
-Branch: `feature/esp-lab-es5510-rebuild`. Commit/hash and remote push status
-are filled in after the milestone commit.
+Branch: `feature/esp-lab-es5510-rebuild`.
+
+Implementation and consolidated research commit:
+`13c11576386949248b56c4696e776324719f32c6`.
