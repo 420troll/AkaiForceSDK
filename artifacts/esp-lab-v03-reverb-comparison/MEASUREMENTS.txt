@@ -1,0 +1,24 @@
+Matched wet-only impulse responses, 44.1 kHz stereo, 16-bit PCM
+Input: simultaneous 0.8 impulse; 20 ms predelay; 2.5 s decay; diffusion .72; damping .34; width 1.0; identical early-reflection controls.
+Implementations are original manual-informed structures, not factory algorithm captures.
+
+Room
+  first 0-250 ms peak=0.109632 at 48.9342 ms
+  early active samples (>10% peak, 30-250 ms)=432
+  energy [0.1-0.2, 0.5-0.6, 1.0-1.1, 2.0-2.1, 4.0-4.1] s=0.138733, 0.00700705, 0.000316236, 9.30517e-07, 9.82687e-12
+  stereo correlation 0.25-2.5 s=0.12533
+
+Hall
+  first 0-250 ms peak=0.0528031 at 61.4512 ms
+  early active samples (>10% peak, 30-250 ms)=715
+  energy [0.1-0.2, 0.5-0.6, 1.0-1.1, 2.0-2.1, 4.0-4.1] s=0.0574069, 0.00271817, 0.000114037, 3.67374e-07, 4.15337e-12
+  stereo correlation 0.25-2.5 s=0.25866
+
+Plate
+  first 0-250 ms peak=0.0892589 at 54.263 ms
+  early active samples (>10% peak, 30-250 ms)=357
+  energy [0.1-0.2, 0.5-0.6, 1.0-1.1, 2.0-2.1, 4.0-4.1] s=0.0980389, 0.00445822, 0.000195709, 5.77152e-07, 6.87026e-12
+  stereo correlation 0.25-2.5 s=0.548744
+
+Integrated-energy ratios (0.1-4 s): Room/Hall=2.4951, Plate/Hall=1.6773
+All responses are finite by construction checks in the companion smoke test.
