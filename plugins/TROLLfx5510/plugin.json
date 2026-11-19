@@ -1,0 +1,15 @@
+{
+  "name": "5510",
+  "manufacturer": "TROLLfx",
+  "version": "0.1.0",
+  "format": "vst2",
+  "kind": "effect",
+  "uid": "T551",
+  "numInputs": 2,
+  "numOutputs": 2,
+  "category": "Effect",
+  "file32": "VST/5510-arm32.so",
+  "file64": "VST/5510-arm64.so",
+  "description": "Four independent ES5510 instruction-execution units in a fixed A-to-D stereo serial chain.",
+  "license": "BSD-3-Clause"
+}

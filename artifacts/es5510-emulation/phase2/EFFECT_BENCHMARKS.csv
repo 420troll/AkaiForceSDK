@@ -1,0 +1,9 @@
+sample_rate,span,frames,outer_block_frames,effect,program_words,repeat_count,median_us_per_frame,median_elapsed_seconds
+44100,short_256,256,64,feedback_delay,19,9,0.533207,0.0001365
+44100,short_256,256,64,modulated_chorus,11,9,0.404691,0.0001036
+44100,long_1sec,44100,4096,feedback_delay,19,3,0.503591,0.0222083
+44100,long_1sec,44100,4096,modulated_chorus,11,3,0.429751,0.0189530
+48000,short_256,256,64,feedback_delay,19,9,0.450395,0.0001153
+48000,short_256,256,64,modulated_chorus,11,9,0.323437,0.0000828
+48000,long_1sec,48000,4096,feedback_delay,19,3,0.502091,0.0241004
+48000,long_1sec,48000,4096,modulated_chorus,11,3,0.335690,0.0161131

@@ -108,3 +108,23 @@ conversion, FIFO ordering, MEMSIZ modes and delay wrap. Compare MAME and any
 independent core first; hardware comparison can follow only with authorized
 equipment and a non-destructive test protocol.
 
+## Issue #4 follow-up (2026-11-16)
+
+`experimental/emulation/mame_es5510_standalone.*` now adapts the MAME device's
+instruction pipeline and VFX pump serial frame to a headless program/WAV
+harness. Its source attribution and BSD-3-Clause terms are in
+`experimental/emulation/THIRD_PARTY_NOTICES.md`. The hand-authored stereo-swap
+microprogram executes 2 MOV instructions plus END per audio frame and produces
+a reproducible impulse WAV; this is a real instruction path but not an effect
+algorithm. Native and ARMv7/Cortex-A17 compile passed. No runtime differential
+against a full MAME process, factory microprogram, or Force performance run is
+available yet. See `docs/HANDOFF_EMULATION.md` and
+`artifacts/es5510-emulation/RESULTS.txt` for measurements and limits.
+
+OpenASR `master` was inspected at
+`241f9331477b07b072330ca6ebd2d7a2e2cc832e`. The ASR effect-upload notes verify
+host-side instruction/GPR commits and readback for local ROM-backed tests;
+its execution-contract notes explicitly leave the ASR pump/HALT/serial policy
+open. MAME's ASR driver currently disables the ES5510 device. This is not
+evidence of a runnable ASR factory program in a standalone harness.
+

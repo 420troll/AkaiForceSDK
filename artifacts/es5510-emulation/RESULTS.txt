@@ -1,0 +1,101 @@
+TROLLfx standalone ES5510 harness — Issue #4
+Recorded: 2026-11-16 UTC
+
+MAME reference commit: 8be57cdc5f44ab830dff44c06dd39f24190742d4
+MAME source: src/devices/cpu/es5510/es5510.cpp, es5510.h,
+             src/devices/sound/esqpump.cpp
+OpenASR notes inspected: master/docs/asr10/investigations/
+  es5510-effect-upload-v350.md and es5510-upload-executable-contract-v350.md
+OpenASR master SHA: 241f9331477b07b072330ca6ebd2d7a2e2cc832e
+No Ensoniq ROM, firmware, factory effect program, or user-supplied program bundle
+was present or used.
+
+Original program: experimental/emulation/programs/original_stereo_swap.esp
+Program SHA-256: 1ec01a965936b6563144eee7e71cd7a7493861e060770be788b8d7a659aa7947
+Microinstructions: 3 (MOV SER2R -> SER3L; MOV SER2L -> SER3R; END)
+Host Serial Control: 0x20 (ports 0..2 input; port 3 output)
+GPR initialization: none
+DRAM initialization: none
+Sample rate metadata: 44100 Hz
+
+Audio render: artifacts/es5510-emulation/original_stereo_swap_impulse.wav
+WAV: stereo 16-bit PCM, 44100 Hz, 176400 frames (4 seconds), 705644 bytes
+Expected / observed first output frame: L=8192, R=24576 (input R/L swapped)
+Remaining frames: zero
+Output SHA-256: 405f04adcea8b6c79e747fef7f1c547aa669d5d4c5296b8692b514ea51fb07ed
+Renderer log: 176400 frames, 529200 instruction words, peak 24576/32767.
+
+Audible synthetic chord demonstration:
+Input:  artifacts/es5510-emulation/original_test_chord_input.wav
+        stereo 16-bit PCM, 44100 Hz, 132300 frames / 3 seconds
+        SHA-256 168f5f6be895f37d9be0a9df319caf49a5e29923ac05d17c9266449e1ad967c9
+Output: artifacts/es5510-emulation/original_stereo_swap_chord.wav
+        exact L/R swap confirmed for all 132300 frames; peak 13514/32767,
+        RMS 0.06546 full scale; 396900 instruction words executed
+        SHA-256 d3ae3b32f2c4af9fd50dfb9efb045dca859754a94ce6849b0b24318e0bb4a1ed
+
+Native strict build:
+  g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Werror \
+    experimental/emulation/mame_es5510_standalone.cpp tools/es5510_render.cpp \
+    -o /tmp/es5510-render
+  PASS
+
+Native functional smoke:
+  g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Werror \
+    experimental/emulation/mame_es5510_standalone.cpp \
+    experimental/emulation/mame_es5510_standalone_test.cpp \
+    -o /tmp/es5510-standalone-test && /tmp/es5510-standalone-test
+  PASS; 2 frames, 6 decoded/executed microinstructions, exact stereo swap.
+
+ASan/UBSan smoke and render: PASS (no reported errors).
+
+Native benchmark, x86_64 development host, g++ -O2:
+  Median of 3 runs; 44,100 frames x 89 words = 3,924,900 words; 0.109474 s;
+  2.48239 us/frame; 0.109474 seconds of host time per 1 second of audio.
+  Median of 3 runs; 44,100 frames x 160 words = 7,056,000 words; 0.162326 s;
+  3.68087 us/frame; 0.162326 seconds of host time per 1 second of audio.
+
+ARMv7 cross-build:
+  /tmp/trollfx-zig/ziglang/zig c++ -target arm-linux-gnueabihf.2.31 \
+    -mcpu=cortex_a17 -O2 -Wl,--strip-all -std=c++17 -Wall -Wextra -Wpedantic -Werror \
+    experimental/emulation/mame_es5510_standalone.cpp tools/es5510_render.cpp \
+    -o /tmp/es5510-render-armv7
+  PASS. ELF32 ARM EABI5, hard-float, Cortex-A17, ARMv7-A, VFPv4/NEON.
+  ARM benchmark binary built with the same flags.
+  Runnable test kit: artifacts/es5510-emulation/es5510-armv7-testkit.zip
+  Runtime was NOT measured: qemu-arm is unavailable in this environment and
+  package-manager installation was denied. This is not a Force performance
+  result. At 44.1 kHz the tested workloads require 3.9249M or 7.056M ES5510
+  emulated instructions per second; validate elapsed time on Force or a valid
+  ARMv7 execution environment before plugin integration.
+
+ARM test-kit binary hashes:
+  renderer c7f6c8538ea690095e52ccbff1ece5fc9a74a2bff3c73f6b77c4d4b672ac6c75
+  benchmark a90bc648400c85e167f9b14e18f2a43101c9f8de71bffa26f7282e4265697e6a
+
+Important: the stereo-swap program proves instruction execution and audio
+serial routing. It is not an Ensoniq factory effect and provides no factory
+algorithm accuracy evidence.
+
+ARMv7 test-kit package:
+  ZIP artifacts/es5510-emulation/es5510-armv7-testkit.zip
+  SHA-256 d67f135df77793da58264a0b4363d4bd320cc261d634daf3c8ba1e3cafae3739
+  Contains stripped ARMv7 hard-float renderer and benchmark, both public test
+  bundles, README and required third-party license notice. No Ensoniq content.
+
+MAME pump fixture test program:
+  Bundle: experimental/emulation/programs/mame_pump_summed_delay_test.esp
+  SHA-256 1d425c662693b8b6c001c39bb738627fa909d58e62504b56d0e05dad82358163
+  Based on MAME's BSD-3-Clause PUMP_REPLACE_ESP_PROGRAM test fixture in
+  esqpump.h at the reference commit above; it is synthetic MAME test code,
+  not Ensoniq firmware or a factory effect program.
+  Chord render: artifacts/es5510-emulation/mame_pump_summed_delay_chord.wav
+  SHA-256 58a10421fc1292170b0917bcf15859c65a051c5d6ed7289624623b7ddacdc086
+  132,300 frames; 13 instructions/frame (1,719,900 total); peak 23,304/32767;
+  RMS 0.09257 full scale. Bundle initializes MEMSIZ register 244 to 0xff,
+  selecting an 8-bit address shift; GPR offset 0x100 is one 16-bit DRAM word.
+  Impulse response first appears at frame 7440, and chord at frame 7441 (the
+  input chord begins on frame 1). Chord output exactly equals the summed stereo
+  input delayed by 7440 frames over the comparable region (NRMSE 0.0). A prior
+  render omitted MEMSIZ and mapped the delay address incorrectly; that invalid
+  result was replaced, and no one-frame delay claim remains.
