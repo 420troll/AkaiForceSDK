@@ -18,6 +18,8 @@ The base-board schematic and a U56 Ghidra cross-reference now verify one banked 
 
 This validates U56→U54 tag checking and corroborates the `$2000–$3FFF` U54 access window. It does not identify instruction payloads or any U52 write to an ES5510. The exact latch edge/decoder equation for the `$0600` write, the complete U54 CE aliases, and the ESP host writes remain open.
 
+The follow-up pass resolved the reset helper and all U56 `$0600` writers, along with a four-entry per-slot bank table whose paired values match in v1.06/v1.15. It also found a Ghidra computed-call candidate at `$82C9 -> $30EC`, but its callback pointer and active U54 bank come from runtime object state and are not tied to an algorithm record or ES5510 bus cycle. See [DP4 banked access trace](DP4_BANKED_ACCESS_TRACE.md). The next decisive step is synchronized U54/ESP hardware capture; do not treat the computed-call edge as recovered microcode.
+
 ## Analysis environment and tool evidence
 
 | Check | Result |

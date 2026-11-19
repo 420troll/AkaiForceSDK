@@ -64,12 +64,11 @@ For an all-channel cold-boot capture, retain all four ESP selects and HALT lines
 
 The ES5510 specification's host sequence provides the decoding key after capture: AS low-to-high phase transition latches the internal address; the following data phase and R/W level identify the register access. A verified instruction load would additionally need the six instruction-byte writes, instruction selector/commit, GPR initialization, any table/delay-RAM setup, and halt/run behavior. No such transaction has yet been captured.
 
-## Remaining questions and next analysis
+## Remaining questions and next experiment
 
-1. Trace U54 CE and the high-address enables around U46/U37 to derive the exact banked U54 CPU window and ESP absolute address ranges.
-2. Continue from the now-verified U54 tag path in U56 v1.06 and v1.15. Follow the service-manual UCODE-tag, instruction, GPR, and table verification paths, resolving runtime pointer values and bank writes. Record an ESP access only when it resolves to a schematic-confirmed selected ES5510 bus cycle.
-3. Compare candidate U54 reads and U57 bank writes against the diagnostic paths. A U54 read alone is not proof of an ES5510 upload.
-4. If static evidence still cannot identify a DSP register transfer, capture the signals listed above during cold boot and selection of one simple effect.
+1. Reduce the remaining U54 CE and U46/U48 high-address enable equations only as needed to decode an observed transaction.
+2. The cross-version Ghidra pass found bank selectors but did not tie them to ES5510 writes; see [DP4 banked access trace](DP4_BANKED_ACCESS_TRACE.md).
+3. Capture U54 reads/bank values and the selected ES5510 host writes synchronously during cold boot and one simple algorithm selection. U54-only or ESP-only traces cannot prove the source-to-destination path.
 
 ## Tool status and reproducibility
 

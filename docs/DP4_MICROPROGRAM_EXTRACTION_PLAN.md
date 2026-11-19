@@ -64,11 +64,11 @@ The Ensoniq MAME source tree has ES5510 device instances in other system drivers
 
 ## Shortest reproducible path to one decoded algorithm
 
-### Preferred next experiment: targeted Ghidra data-flow pass, then hardware if unresolved
+### Current next experiment: synchronized hardware capture
 
-The base board and tag path are now known well enough to continue a bounded software pass without guessing the U54 page. Start from U56 v1.06/v1.15 tag checks and writes to `$0600`; follow the bank-selection variables, UCODE-tag routines, manual-described instruction/GPR/table verification paths, and the indirect calls. Resolve candidate addresses against Rev J U46/U57/ESP wiring. The committed `Dp4MemoryAudit.java` can export direct-reference source/target pairs to a caller-owned private report. The ROM-private `verify_u54_tag.py` reproducibly checks the two-byte bank-9 tag relationship without emitting ROM bytes.
+The bounded cross-version Ghidra pass is complete. It identified the reset bank-9 helper, all `$0600` latch writes, the four-slot U56 bank descriptor table, and a computed-call candidate at `$30EC`; it did not connect U54 algorithm data to an ES5510 host transaction. Runtime object state and the destination address decode remain unresolved. Findings and confidence limits are in [DP4 banked access trace](DP4_BANKED_ACCESS_TRACE.md) and [DP4 extraction feasibility decision](DP4_EXTRACTION_FEASIBILITY_DECISION.md).
 
-Do not build a full 6803 emulator yet. If this targeted static pass still cannot resolve a selected ESP host write and the runtime pointer state, use one synchronized hardware capture as the next decisive experiment:
+Do not start a full 6803 emulator or another broad static scan. Use one synchronized hardware capture as the next decisive experiment:
 
 Use a known-good DP/4 with the case open only by a qualified electronics technician. Use high-impedance, buffered digital probes and verify signal voltage/timing against the exact ES5510 revision datasheet and the actual board revision. The service manual warns to unplug the unit before opening it; do not attach or remove probes while powered. Do not use the DP/4+ schematic as a pinout for the original DP/4.
 
