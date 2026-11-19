@@ -22,6 +22,8 @@ The service manual's printed pp. 6–7 list ESP A–D error groups for UCODE tag
 
 The next static pass should use the confirmed `$8000` U56 mapping and the base-board decoder/control paths, then trace backward from the manual's GPR/instruction/table verification behaviors. A U54 read or the old `$1800/$1801` ACIA routine is not sufficient evidence of an ES5510 upload.
 
+The focused extraction feasibility decision is in [DP4_EXTRACTION_FEASIBILITY_DECISION.md](DP4_EXTRACTION_FEASIBILITY_DECISION.md). It verifies one U56-to-U54 bank-9 revision-tag read but still finds no U52-to-ES5510 instruction/GPR transaction.
+
 ## Emulation references and limits
 
 - [MAME ES5510 host implementation](https://github.com/mamedev/mame/blob/8be57cdc5f44ab830dff44c06dd39f24190742d4/src/devices/cpu/es5510/es5510.cpp) is a useful model for device-local GPR, instruction, RAM, and host-control semantics. Its selectors are not absolute DP/4 CPU addresses.

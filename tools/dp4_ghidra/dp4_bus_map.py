@@ -7,6 +7,10 @@ enable terms for U46.  It only models wiring directly visible on the drawing.
 U56_BASE = 0x8000
 U56_SIZE = 0x8000
 U54_BANK_SIZE = 0x2000
+# Correlated by the U56 revision-tag read at CPU $2000 and the matching
+# first word of U54 bank 9 in both private ROM revisions. The schematic's
+# complete U54 chip-enable equation is still not reduced here.
+U54_CPU_WINDOW_BASE = 0x2000
 
 
 def u56_file_offset(cpu_address: int) -> int:
@@ -23,6 +27,21 @@ def u54_file_offset(bank: int, low_address: int) -> int:
     if not 0 <= low_address < U54_BANK_SIZE:
         raise ValueError("U54 low address must fit A0-A12")
     return bank * U54_BANK_SIZE + low_address
+
+
+def u54_cpu_file_offset(bank: int, cpu_address: int) -> int:
+    """Map the firmware-correlated U54 CPU window to a physical file offset.
+
+    U54 A0-A12 are wired to CPU A0-A12, while U57 supplies U54 A13-A16.
+    U56 reads its revision tag at CPU $2000 after selecting U54 bank 9; that
+    tag matches the first word of physical bank 9 in both ROM revisions.
+    This establishes the $2000-$3fff window for that access, but does not
+    claim the complete chip-enable/mirror equation.
+    """
+    low_address = cpu_address - U54_CPU_WINDOW_BASE
+    if not 0 <= low_address < U54_BANK_SIZE:
+        raise ValueError("CPU address is outside the firmware-correlated U54 window")
+    return u54_file_offset(bank, low_address)
 
 
 def u46_y_output(cpu_address: int) -> int:

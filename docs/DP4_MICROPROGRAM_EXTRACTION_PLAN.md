@@ -1,17 +1,17 @@
 # DP/4 factory microprogram extraction plan
 
 Research branch: `issue11-dp4-rom-forensics`  
-Baseline: `9f0f6b98318915871db9fce2dacbfbe8bc73d86d`
+Baseline: `c06ac8992f1e4ff3d20dab0f51f901e5637b543f`
 
-Research update: 2026-11-18
+Research update: 2026-11-19
 
 ## Conclusion
 
-No verified relationship currently connects a particular U54 byte range to the instruction memory of a physical DP/4 ES5510. U54 is verified as the VCODE/UCODE EPROM; MAME's ES5510 device model explains how a host can write instruction memory and GPRs; MAME does **not** model the complete DP/4. The base DP/4 service manual identifies a 6803 at U52, consistent with the U56 6801-family decode. The CPU address map, base-board ROM/DSP bus wiring, and ROM-to-ESP upload routine remain unconfirmed. See [DP/4 hardware architecture audit](DP4_HARDWARE_ARCHITECTURE_AUDIT.md). The shortest evidence-producing next step is a synchronized, read-only bus capture on a DP/4 while booting and selecting one effect, capturing the U54 ROM bus and selected ESP host activity together.
+No verified relationship yet connects a U54 instruction byte range to ES5510 instruction memory. The base DP/4 schematic now confirms U52, U56's `$8000–$FFFF` map, four ES5510 host buses, U54 bank wiring, and U59 ACIA. Static analysis also verifies a cross-revision U54 tag read: U56 selects bank 9, reads CPU `$2000`, and compares a tag matching U54 offset `0x12000` in v1.06 and v1.15. This proves a CPU-to-U54 data path, not the factory ES5510 upload. See the [hardware audit](DP4_HARDWARE_ARCHITECTURE_AUDIT.md), [base-board bus map](DP4_BASE_BOARD_BUS_MAP.md), and [feasibility decision](DP4_EXTRACTION_FEASIBILITY_DECISION.md).
 
 This is not an algorithm recovery. No extracted factory program has been run or compared against a DP/4 output.
 
-The follow-up U56 static pass is recorded in [DP4_U56_LOADER_ANALYSIS.md](DP4_U56_LOADER_ANALYSIS.md). It found a stable status/data sender on the reset path, but its packets are sourced from U56 and it cannot be identified as the ES5510 loader.
+The follow-up U56 static pass is recorded in [DP4_U56_LOADER_ANALYSIS.md](DP4_U56_LOADER_ANALYSIS.md). Its `$1800/$1801` sender is the U59 ACIA; it is unrelated to ESP writes. The new bank-9 tag correlation is documented in the [feasibility decision](DP4_EXTRACTION_FEASIBILITY_DECISION.md).
 
 ## Verified discoveries
 
@@ -32,11 +32,11 @@ The six tested raw 48-bit packing/lane hypotheses still produce median one-word 
 
 ### U56 identification and startup
 
-- The service manual identifies U52 as a 6803 (printed p. 6) and U56 as the operating-system EPROM. It does not provide the full CPU, ROM, or ESP address-decoding schematic.
-- U56 is 32,768 bytes. Its last two bytes are `0x84E4` in both versions. If the ROM is mapped at CPU address `0x8000..0xFFFF`, the vector at image offset `0x7FFE` is the 6800-family reset vector and points to image offset `0x04E4`. This is a plausible map, not a verified DP/4 memory map.
-- Ghidra 12.1.4 with the isolated GhidraMC6800 v1.2 extension reaches 55 functions in each ROM using `MC6801:BE:16:default`; v1.15 contains reachable `ABX` and `MUL`. In the same image, base `MC6800` mode reaches only 2 functions / 59 instructions, while `MC6801` and `HD6301` reach 55 / 1,326. This supports a 6801-family instruction set, consistent with the manual's 6803 identification. The precise CPU suffix and physical ROM decode still need board-level confirmation. See the updated [U56 loader analysis](DP4_U56_LOADER_ANALYSIS.md).
+- The service manual and base DP/4 Rev J schematic identify U52 as a 6803. The Motorola MC6801/03 manual says MC6803 operates in modes 2 and 3; U56 is wired at `$8000–$FFFF`, and the firmware's low `$0014` RAM-control-register write is consistent with mode 2. The complete U58 external SRAM decode is still being reduced.
+- U56 is 32,768 bytes. The schematic maps it at CPU `$8000–$FFFF`; the vector at `$FFFE` (file offset `0x7FFE`) is `0x84E4`, pointing to file offset `0x04E4`. All eight vector words at `$FFF0–$FFFF` map to valid addresses within U56 in both revisions. The exact targets and mode evidence are tabulated in the [feasibility decision](DP4_EXTRACTION_FEASIBILITY_DECISION.md).
+- Ghidra 12.1.4 with the isolated GhidraMC6800 v1.2 extension reaches 55 functions in each ROM using `MC6801:BE:16:default`; v1.15 contains reachable `ABX` and `MUL`. In the same image, base `MC6800` mode reaches only 2 functions / 59 instructions, while `MC6801` and `HD6301` reach 55 / 1,326. This supports the 6801-family instruction set used by the manual-identified 6803. The exact U52 suffix/clock and reset-mode strap levels remain unverified; the U56 ROM decode itself is now schematic-confirmed. See the updated [U56 loader analysis](DP4_U56_LOADER_ANALYSIS.md).
 - The DP/4+ Rev C digital-board schematic is a separate-model comparison: it names a 63803 microprocessor, a 27256 O/S ROM, a banked 27C2001 ROM, and shows the UCODE ROM separately. Its ROM bank and ESP signal wiring must not be projected onto the base DP/4.
-- Under the assumed map, startup begins at `0x84E4` (file offset `0x04E4`), initializes the stack and several low memory locations, calls helpers, clears RAM ranges and writes I/O-looking addresses including `0x1800/0x1801`. Ghidra's reachable CFG reports an indirect `JSR 0,X` at v1.06 `0x85E7` and v1.15 `0x85EA` with no static destination edge. The pointer is loaded through runtime object fields, so static analysis does not resolve it. No call sequence was tied to ES5510 program writes or U54 source offsets.
+- With the confirmed U56 map, startup begins at `0x84E4` (file offset `0x04E4`), sets the stack to `$510C`, enables the on-chip RAM through `$0014`, and initializes ports `$0000–$0002`. It writes bank 9 through `$0600` and verifies the U54 tag at `$2000`. Ghidra also shows indirect calls at v1.06 `$85E7` and v1.15 `$85EA` whose function-pointer targets come from runtime data; the downstream ES host writes remain unresolved. `$1800/$1801` are mapped to the ACIA by the schematic.
 - The service manual reports UCODE tag, instruction/table/GPR verify, and download-verify failures. This supports that the firmware validates multiple structured categories; it does not reveal the U54 serialization or transfer routine.
 
 ### MAME host-interface model and system coverage
@@ -54,9 +54,9 @@ The Ensoniq MAME source tree has ES5510 device instances in other system drivers
 
 ## What is still unresolved
 
-1. The exact U52 6803 variant/package, clock, and verified U56 reset/vector mapping.
-2. The base DP/4 CPU address map, U54 bank/enable logic, and whether U54 reads are direct, banked, interleaved, or copied through another memory region.
-3. The physical ES5510 revision/package pinout used on the target base DP/4 board and the exact host address/data/strobe connections.
+1. Exact U52 suffix, clock, mode strap levels, and U58 external SRAM select range.
+2. The complete U54 CE equation/aliases and U46/U48 decoder enable terms for absolute CPU addresses of the four ES5510 host ports.
+3. The runtime object/pointer values that select the ESP program download and per-channel initialization routines.
 4. The DP/4 host's ESP register transactions, including whether it uses six instruction-latch byte writes followed by a selector, combined writes, bursts, or a different access path.
 5. U54 record schemas and the transformation from ROM bytes to instructions/tables/GPR initialization.
 6. Per-algorithm program boundaries, actual GPR/control maps, DRAM sizing/address maps, serial routing and frame scheduling.
@@ -64,7 +64,11 @@ The Ensoniq MAME source tree has ES5510 device instances in other system drivers
 
 ## Shortest reproducible path to one decoded algorithm
 
-### Preferred: one synchronized hardware capture
+### Preferred next experiment: targeted Ghidra data-flow pass, then hardware if unresolved
+
+The base board and tag path are now known well enough to continue a bounded software pass without guessing the U54 page. Start from U56 v1.06/v1.15 tag checks and writes to `$0600`; follow the bank-selection variables, UCODE-tag routines, manual-described instruction/GPR/table verification paths, and the indirect calls. Resolve candidate addresses against Rev J U46/U57/ESP wiring. The committed `Dp4MemoryAudit.java` can export direct-reference source/target pairs to a caller-owned private report. The ROM-private `verify_u54_tag.py` reproducibly checks the two-byte bank-9 tag relationship without emitting ROM bytes.
+
+Do not build a full 6803 emulator yet. If this targeted static pass still cannot resolve a selected ESP host write and the runtime pointer state, use one synchronized hardware capture as the next decisive experiment:
 
 Use a known-good DP/4 with the case open only by a qualified electronics technician. Use high-impedance, buffered digital probes and verify signal voltage/timing against the exact ES5510 revision datasheet and the actual board revision. The service manual warns to unplug the unit before opening it; do not attach or remove probes while powered. Do not use the DP/4+ schematic as a pinout for the original DP/4.
 
@@ -99,7 +103,7 @@ If channel count is limited, use a multi-channel logic analyzer or two analyzers
 
 ### Alternative: add a DP/4 machine model to MAME
 
-This requires the base DP/4 CPU identity/address map, exact board logic, ROM declarations, ES5510 revision/clocking, audio ADC/DAC path and serial routing. Porting the 6801-compatible U56 image into a guessed machine would repeat the unsupported mapping assumptions above. First use a bus capture to establish the map; then add a MAME driver that logs U54 reads and calls the existing ES5510 host handlers. Keep the logger behind a command-line/debug flag, output transaction address/data/time only, and write synthetic tests against the reconstructed transaction parser.
+This requires the CPU and U56 map (now schematic-confirmed), the remaining U54/ESP chip-select equations, U57 latch timing, ES5510 revision/clocking, audio ADC/DAC path and serial routing. A MAME system model is premature until a selected ESP host cycle or the complete decoder path is established. If static analysis and schematic reduction stop at the dynamic pointer dispatch, a synchronized bus capture should supply the minimum transaction evidence before adding a DP/4 driver.
 
 ## Extraction validation checklist
 

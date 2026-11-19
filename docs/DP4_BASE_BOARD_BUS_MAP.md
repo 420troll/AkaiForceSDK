@@ -8,7 +8,7 @@ Status: schematic-backed static findings; no live board capture has been made.
 
 A complete base DP/4 main-board schematic is publicly available. The copy reviewed here is titled **PCB Schematic, Main Board, DP-4**, drawing **4010015001**, revision **J**, sheets **1–5**. Sheet 2 is the digital section. It is the base DP/4 drawing, not the separate DP/4+ Rev C drawing. The downloaded PDF and all image extracts remain under `/tmp/dp4-rom-forensics`; neither is copied into this repository.
 
-The drawing confirms the CPU-to-ROM buses and identifies four separate ES5510 host interfaces. It supports the U56 high-half mapping and the U54 bank wiring, but the U54 window decode and the ESP decoder's full high-address enable terms have not yet been reduced to complete Boolean equations. No absolute ESP host-register transaction has been observed on hardware.
+The drawing confirms the CPU-to-ROM buses and identifies four separate ES5510 host interfaces. A cross-revision U56 tag check now corroborates the U54 bank-9 access window. The complete U54 chip-enable/alias equation and the ESP decoder's full high-address enable terms have not yet been reduced to Boolean equations. No absolute ESP host-register transaction has been observed on hardware.
 
 ## Confirmed hardware connections
 
@@ -17,13 +17,24 @@ The drawing confirms the CPU-to-ROM buses and identifies four separate ES5510 ho
 | U52 | Sheet 2 labels U52 `6803`; address lines A8–A15, multiplexed A/D0–A7, E, AS, and R/W connect to the digital bus. The service manual independently names the 6803 at U52 (printed p. 6). | U52 is the DP/4 host CPU and the bus master for the ROM and ESP host interface. The base DP/4 is not a 68030 system. |
 | U56 | Sheet 2 labels U56 `27256`; A0–A14 and D0–D7 join the U52 bus. Its active-low CE is driven by U37/C (74F00) from A15 and +5 V, selecting the high half when A15 is high; its output-enable is gated by the read/write control. | U56 occupies CPU addresses `$8000–$FFFF` (32 KiB). The 6803 reset-vector fetch at `$FFFE–$FFFF` maps to U56 file offsets `$7FFE–$7FFF`; the private v1.06/v1.15 vector `$84E4` therefore enters at file offset `$04E4`. |
 | U58 | Sheet 2 labels U58 `62256`; A0–A14 and D0–D7 join the CPU bus, with distinct CE/OE wiring. | A 32 KiB external SRAM is confirmed. Its exact CPU address range and interaction with the banked U54 window are not established until its complete CE path is traced. |
-| U54 | Sheet 2 labels U54 `27C010`. A0–A12 and D0–D7 connect to the U52 address/data bus. U54 A13–A16 connect to U57 outputs B0–B3. U54 CE/OE are separate from the U56 decode. | U52 reads U54 through a banked 8 KiB address slice: 13 CPU address bits plus four latched bank bits address the 128 KiB ROM. This is direct U52 bus access, not evidence of a second controller reading U54. The exact CPU window and CE equation remain unresolved. |
-| U57 | Sheet 2 labels a 74HCT377; its outputs include B0–B3 and HALT1–HALT4. B0–B3 route to U54 A13–A16; HALT1–HALT4 route to the corresponding ESP halt inputs. | The same latch provides four U54 bank bits and four independent DSP halt controls. Which write/address cycle updates U57 is not yet fully decoded. |
+| U54 | Sheet 2 labels U54 `27C010`. A0–A12 and D0–D7 connect to the U52 address/data bus. U54 A13–A16 connect to U57 outputs B0–B3. U54 CE/OE are separate from the U56 decode. | A firmware-correlated 8 KiB CPU window is at `$2000–$3FFF`: the U56 code selects bank 9, reads `$2000`, and checks a revision tag matching physical U54 offset `0x12000` in both revisions. The complete CE equation and any aliases remain unresolved. |
+| U57 | Sheet 2 labels a 74HCT377; its outputs include B0–B3 and HALT1–HALT4. B0–B3 route to U54 A13–A16; HALT1–HALT4 route to the corresponding ESP halt inputs. | The same latch provides four U54 bank bits and four independent DSP halt controls. U56 writes `$0600` with bank 9 before the U54 bank-9 tag read; the exact latch edge and full address decode remain to be traced. |
 | U61, U62, U83, U84 | Sheet 2 labels four `5510` ESPs. Each has its own ESP1–ESP4 select, HALT1–HALT4, and local DRAM signals; their host/data and control connections reach the shared U52 bus. | The base DP/4 uses four ES5510s with individually selectable host interfaces. |
 | U46 | Sheet 2 labels U46 `74HC138`; its A/B/C inputs connect to CPU A9/A10/A11, and outputs Y4–Y7 are named ESP1–ESP4. | The low three decoder inputs distinguish the four ESP outputs. The other decoder enables determine the overall address region; that full qualification still needs tracing before giving absolute ESP CPU addresses. |
 | U59 | Sheet 2 labels U59 `6850`; its RS, CS0–CS2, R/W, E, RXDATA, and TXDATA pins connect to the CPU/peripheral circuitry. | This is the ACIA, distinct from the four ESPs. |
 
 The service manual calls U54 the VCODE/UCODE ROM and U56 the O/S ROM (printed pp. 13 and 19). Its board-layout picture is not the source for the bus claims above; those come from the base main-board schematic.
+
+## Firmware-correlated U54 bank and tag access
+
+The ROM-private verifier `tools/dp4_ghidra/verify_u54_tag.py` checks a revision-tag comparison found by Ghidra in both U56 images against U54 bank 9. It reports metadata only and never writes or emits firmware bytes:
+
+| Revision | U56 tag-check CPU address / file offset | Expected tag | U54 bank 9 file offset | Match |
+|---|---|---:|---:|---|
+| v1.06 | `$8572` / `0x0572` | `0x0106` | `0x12000` | yes |
+| v1.15 | `$8575` / `0x0575` | `0x010F` | `0x12000` | yes |
+
+In each revision, the startup chain calls the bank-selection helper before the tag read. The helper writes bank value 9 to `$0600`; the schematic connects U57 outputs B0–B3 to U54 address inputs A13–A16. The 6803 then reads `$2000`, where CPU A0–A12 are zero, and compares the returned word to its version-specific expected tag. This is strong, cross-revision evidence for the CPU `$2000` access to bank 9 and a firmware-correlated U54 window. It validates a CPU-to-U54 tag read only; it does not identify an ES5510 instruction write or program boundary.
 
 ## U56 firmware accesses `$1800/$1801`
 
@@ -36,7 +47,7 @@ The repeated U56 access pair is now attributable to the **U59 6850 ACIA**, not a
 
 This corrects the earlier uncertainty about `$1800/$1801`: the board schematic provides a specific non-DSP peripheral match. It does not resolve the unrelated indirect `JSR 0,X` or prove where DSP instruction data is uploaded.
 
-The lower-address input pattern at `$1800` corresponds to U46 Y4, which is wired to ESP1, but the schematic's other U46 enable conditions are not yet resolved here. Therefore the `$1800/$1801` firmware access is not evidence that ESP1 is selected; the U59 ACIA component and its matching status/data behavior provide the supported identification.
+The A9–A11 input pattern at `$1800` would select U46 Y4, which is wired to ESP1, but the decoder's additional enables are not active there: the schematic separately maps `$1800/$1801` to U59's 6850 ACIA, and its status/data access pattern matches the firmware. Therefore these accesses are not evidence that ESP1 is selected.
 
 ## ESP host-interface capture signals
 
@@ -56,7 +67,7 @@ The ES5510 specification's host sequence provides the decoding key after capture
 ## Remaining questions and next analysis
 
 1. Trace U54 CE and the high-address enables around U46/U37 to derive the exact banked U54 CPU window and ESP absolute address ranges.
-2. Re-import U56 v1.06 and v1.15 at the schematic-confirmed `$8000` base, preserving the MC6801-compatible decoder, then follow the UCODE tag, instruction verification, GPR verification, and table verification paths. Record accesses only when they resolve to schematic-confirmed ESP select cycles or bus-control writes.
+2. Continue from the now-verified U54 tag path in U56 v1.06 and v1.15. Follow the service-manual UCODE-tag, instruction, GPR, and table verification paths, resolving runtime pointer values and bank writes. Record an ESP access only when it resolves to a schematic-confirmed selected ES5510 bus cycle.
 3. Compare candidate U54 reads and U57 bank writes against the diagnostic paths. A U54 read alone is not proof of an ES5510 upload.
 4. If static evidence still cannot identify a DSP register transfer, capture the signals listed above during cold boot and selection of one simple effect.
 

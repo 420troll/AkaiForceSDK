@@ -10,7 +10,13 @@ ROMs: private DP4 U56 v1.06 and v1.15 images; hashes are in [DP4_ROM_MICROCODE_F
 
 **No ES5510 factory-program loader routine is identified.** A stable, byte-for-byte-identical U56 routine pair was found that transmits short packets through a memory-mapped status/data pair. Its reset-path caller sources two 8-byte blocks from U56 ROM itself. The base DP/4 schematic now identifies U59 as a 6850 ACIA: the `$1801` write and `$1800` status poll match its transmit data/status registers. This is verified serial peripheral I/O, not an ES5510 register transaction. There remains no evidence that this routine reads U54 or writes ES5510 instruction/GPR memory.
 
-The DP/4 service manual identifies the host CPU as a 6803 at U52. The U56 instruction-family decode is consistent with this 6801-family CPU. The base board schematic resolves the U56 window and shows U54 banked directly on the U52 bus. See [base-board bus map](DP4_BASE_BOARD_BUS_MAP.md). The exact U54 CPU window and DSP host address decode remain unresolved.
+The DP/4 service manual identifies the host CPU as a 6803 at U52. The U56 instruction-family decode is consistent with this 6801-family CPU. The base board schematic resolves the U56 window and shows U54 banked directly on the U52 bus. The U54 tag check corroborates the `$2000–$3FFF` window, though the complete CE/alias equation and absolute DSP host address decode remain unresolved. See [base-board bus map](DP4_BASE_BOARD_BUS_MAP.md).
+
+### Follow-up: U54 revision-tag access verified
+
+The base-board schematic and a U56 Ghidra cross-reference now verify one banked U54 read. In v1.06, U56 file offset `0x0572` (CPU `$8572`) loads the word at CPU `$2000` and compares it with tag `0x0106`. In v1.15 the equivalent check is at file offset `0x0575` (CPU `$8575`) and compares against `0x010F`. The startup chain selects bank 9 immediately before the check by writing `$0600`; U57's B0–B3 outputs drive U54 A13–A16. Since CPU `$2000` has A0–A12 low, this selects U54 file offset `9 * 0x2000 = 0x12000`. The bank-9 word at that offset matches the corresponding expected tag in both private images. The private-input verifier `tools/dp4_ghidra/verify_u54_tag.py` reproduces this check and emits hashes/offsets/tags only.
+
+This validates U56→U54 tag checking and corroborates the `$2000–$3FFF` U54 access window. It does not identify instruction payloads or any U52 write to an ES5510. The exact latch edge/decoder equation for the `$0600` write, the complete U54 CE aliases, and the ESP host writes remain open.
 
 ## Analysis environment and tool evidence
 

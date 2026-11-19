@@ -24,8 +24,9 @@ public class Dp4Report extends GhidraScript {
             out.println("PROGRAM " + currentProgram.getName());
             out.println("LANGUAGE " + currentProgram.getLanguage().getLanguageID());
             out.println("FUNCTION_COUNT " + currentProgram.getFunctionManager().getFunctionCount());
+            out.println("CPU_MAP_NOTE Ghidra import blocks below describe the binary loader mapping, not board RAM/ROM types");
             for (MemoryBlock block : currentProgram.getMemory().getBlocks()) {
-                out.println("MEMORY_BLOCK " + block.getName() + " " + block.getStart() + ".." +
+                out.println("GHIDRA_IMPORT_BLOCK " + block.getName() + " " + block.getStart() + ".." +
                     block.getEnd() + " r=" + block.isRead() + " w=" + block.isWrite() +
                     " x=" + block.isExecute());
             }
