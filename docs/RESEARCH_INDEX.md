@@ -1,6 +1,6 @@
 # Research index
 
-Research date: 2026-11-15 UTC. Evidence labels used throughout:
+Research date: 2026-11-19 UTC. Evidence labels used throughout:
 
 - **Verified**: directly supported by a cited primary document, upstream code,
   build/test output, or repository state.
@@ -31,6 +31,10 @@ Research date: 2026-11-15 UTC. Evidence labels used throughout:
 | [EPS-16 Plus service manual](https://www.vintagesynthparts.com/wp-content/uploads/2018/01/Ensoniq-EPS16-Service-Manual-with-searchable-text.pdf) | ESP test names, ESP RAM/GPR/instruction diagnostics, public factory-effect names and historical OS notes | SHA-256 `5b95c60687c590b1ca5f785b7b933ea62ae405c2670c6f30ac96d1dbbb973e7f` |
 | [ASR-10 effects musician's manual](https://datassette.s3.us-west-004.backblazeb2.com/manuais/ensoniq_eq_musicians_manual.pdf) | Effect selection/loading behavior, buses, user-visible algorithms and parameters | SHA-256 `e8ab5100904caf91fe355065ed9646aff197761b0663a7d452dc98af1f9a29dc` |
 | [Ensoniq technical-document catalog](https://zine.r-massive.com/ensoniq-technical-documents-and-schematics/) | Discovery index for chip specs, manuals and schematics | Secondary index; links to the public scans above |
+| [ASR/EPS archive](https://zine.r-massive.com/ensoniq-asr-eps-archive/) | Lists factory sound-disk bundles, OS versions and ASR-10 1.50b EPROMs | Third-party index; linked Mega items not downloaded because redistribution status was not established |
+| [Ensoniqsamplers OS index](https://www.ensoniqsamplers.com/epsasr/026.html) | Links ASR OS 1.61 and 3.53 update packages; describes versions and ROM requirements | Direct Chicken Systems NE wrappers were downloaded as inert data to ignored `research_local/`, hash recorded in `ASR10_FIRMWARE_INVENTORY.md`; payload not extracted |
+| [OpenASR](https://github.com/peroberg/OpenASR) | ASR-10 MC68302/ES5510 machine model, host interface map, media requirements, prior reported V3.50 loader traces | Inspected commit `241f9331477b07b072330ca6ebd2d7a2e2cc832e`; no ROM/OS images distributed in checkout; current ES5510 config is disabled |
+| [EpsLin Neo](https://github.com/handsthatstrike/EpsLinNeo) | ASR/EPS disk-image and EFE directory/FAT structure; EFE extraction utility | GPL-2.0, inspected commit `cf20955e6f9f64dca3c06deaa220598e5fe1bd08`; compiled only in `/tmp` for CLI inspection; no code copied |
 
 The public manuals were used for research only and are deliberately absent
 from this repository.
@@ -39,7 +43,7 @@ from this repository.
 
 | Project | Revision inspected | Finding | License/reuse status |
 |---|---|---|---|
-| [MAME ES5510 core](https://github.com/mamedev/mame/tree/master/src/devices/cpu/es5510) | `8be57cdc5f44ab830dff44c06dd39f24190742d4` | Executable ES5510 model, disassembly, host interface, 24-bit ALU/GPR model, 48-bit instruction/MAC path, delay/table addressing, serial pump | BSD-3-Clause in each source header and MAME license; attribution/conditions required |
+| [MAME ES5510 core](https://github.com/mamedev/mame/tree/8be57cdc5f44ab830dff44c06dd39f24190742d4/src/devices/cpu/es5510) | `8be57cdc5f44ab830dff44c06dd39f24190742d4` | Executable ES5510 model, internal instruction-field logger/decoder, host interface, 24-bit ALU/GPR model, 48-bit instruction/MAC path, delay/table addressing, serial pump | BSD-3-Clause in each source header and MAME license; `es5510d.cpp` disassembler entrypoint is a stub at this pin; no raw-file importer. Attribution/conditions required |
 | [MAME Ensoniq drivers](https://github.com/mamedev/mame/tree/master/src/mame/ensoniq) | same | Product mappings for VFX/EPS/EPS-16+/SD/SQ/KT/TS/ASR/MR; ES5511 machines currently use or mention the ES5510 device only as a disabled/skeleton substitute | BSD-3-Clause; driver comments are useful evidence but not a primary hardware specification |
 | [mardlib Ensoniq EPS-16 Plus](https://github.com/mardlib/Ensoniq-EPS-16-Plus) | default branch inspected 2026-11-15 | Claims a standalone ES5510 core adapted from MAME and requires user-supplied ROM/OS; useful independent integration/test lead | No top-level `LICENSE` or `LICENSE.md` was found. `THIRD_PARTY_NOTICES.md` covers dependencies, not necessarily all original repository code. Do not copy code until licensing is clarified |
 | [Musashi](https://github.com/kstenerud/Musashi) | not cloned | 68000 core used by the EPS emulator | Permissive notice reproduced by the dependent project; re-check upstream revision before use |
@@ -57,6 +61,21 @@ unverified and retains a selectable/under-investigation DOL rounding behavior.
 - Commit date/message: 2026-11-07, `Add plugin format to plugin.json`
 - SDK license: MIT; its README states it contains no Steinberg VST SDK code.
 - Verified build and host results are in `SDK_COMPATIBILITY.md`.
+
+## ASR-10 acquisition and loader handoffs
+
+- `ASR10_FIRMWARE_INVENTORY.md`: acquired NE wrapper hashes, absent boot ROM
+  fingerprints, missing OS image/effect media, archive-source status, and the
+  V3.50 ASR-10/ASR-88 compatibility conflict.
+- `ASR10_FACTORY_LOADER_ANALYSIS.md`: historical V3.50 host upload/readback
+  path, prior reported ROM-HALL/44LUSH endpoints/hashes, and what is missing for
+  replay.
+- `OPENASR_DSP_TRANSFER_TRACE.md`, `ASR10_FACTORY_PROGRAM_CAPTURE.md`, and
+  `5510_FACTORY_EXECUTION_VALIDATION.md`: passive trace tooling and explicit
+  non-claims. No complete factory program is checked in.
+- `tools/asr10_firmware_inventory.py` hashes/classifies private inputs without
+  executing Windows installer files. `.gitignore` excludes the entire local
+  `research_local/` tree.
 
 ## Evidence table
 

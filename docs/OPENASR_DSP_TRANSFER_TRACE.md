@@ -29,6 +29,17 @@ floppy image are not present here. Hashes alone cannot reconstruct a program.
 These are **reported prior observations**, not new results from this branch,
 and must be reacquired from a legally held image before program replay claims.
 
+Further details in the current OpenASR investigation docs report that the
+loader begins at `$F973F0`, chooses a host selector from a record type near
+`$F97450`, and for type 1 writes GPR and instruction latches before a combined
+commit at `$FC31C1`. The report records a 44LUSH first-END index `$3B` and
+ROM-HALL first-END index `$58`, with committed words `$7A81FFFFF040` and
+`$3662FFFFF040`, respectively. It includes hashes for each complete index/
+word list, but the lists and captured GPR states are only in reduced logs
+referenced under `/private/tmp/`; those logs are absent from this checkout.
+See [the loader analysis](ASR10_FACTORY_LOADER_ANALYSIS.md) for exact hashes
+and the limits on interpreting these results.
+
 ## Passive recorder
 
 `tools/asr10_es5510_trace.lua` observes CPU program-space reads/writes in the

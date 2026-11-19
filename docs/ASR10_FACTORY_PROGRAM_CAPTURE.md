@@ -70,3 +70,12 @@ future human-validated capture should establish all of the following:
 
 No such complete capture is present in this branch. Synthetic traces used in
 unit tests never meet capture acceptance.
+
+OpenASR's committed V3.50 research notes preserve an important prior partial
+result: the firmware reportedly uploaded ROM HALL and 44LUSH, verified host
+readback, and yielded reproducible instruction-list hashes and END words.
+However, those reports point to raw logs under `/private/tmp/` that are not
+present now, and the complete instruction/GPR values are not printed in the
+committed reports. Treat this as prior partial trace evidence, not a replayable
+capture. Restore the original logs/media or reacquire them in a new run before
+building a bundle.

@@ -12,9 +12,14 @@
 This milestone implements passive capture and offline reconstruction tooling,
 documents ASR-10/OpenASR host protocol evidence, and captures the distinction
 between the runtime host protocol and the effect-file container. It does **not**
-recover a factory program. No OS image or ROMs were available; OpenASR's local
-media directories contain only README files. The only new execution fixture is
-synthetic and is explicitly rejected as a complete/authentic capture.
+recover a complete replayable factory program. Two Chicken Systems OS update
+self-extractors (1.61 and 3.53) were downloaded as inert data to ignored
+`research_local/asr10_firmware/` and hash-verified. Their embedded EDA images
+remain unextracted. No boot ROMs, raw OS images or factory effect files were
+available. OpenASR contains prior committed V3.50 reports of firmware transfers
+and partial ROM-HALL/44LUSH instruction lists, but raw logs and full arrays are
+absent; see `docs/ASR10_FACTORY_LOADER_ANALYSIS.md`. The only new execution
+fixture is synthetic and is explicitly rejected as a complete/authentic capture.
 
 OpenASR maps `$FC3000–$FC303F` to ES5510 host offsets and `$FC3100/3140/3180/31C0`
 to read/GPR/instruction/combined commit offsets `$80/$A0/$C0/$E0`. PA4 at
@@ -44,16 +49,23 @@ unimplemented for VFX; that finding is not transferred to ASR-10 behavior.
   refuses incomplete and synthetic captures and writes only outside Git.
 - `tools/tests/test_asr10_capture.py`: tests byte ordering, commit behavior,
   synthetic classification and invalid input.
+- `tools/asr10_firmware_inventory.py`: hashes/classifies local packages,
+  checks known boot-ROM fingerprints, reports missing media and inspects
+  ZIP/NE metadata without running installers.
 
 ## Validation performed
 
 ```sh
-python3 -m unittest discover -s tools/tests -p 'test_asr10_capture.py' -v
-python3 -m py_compile tools/asr10_capture_reconstruct.py tools/asr10_capture_to_bundle.py tools/asr10_capture_disassemble.py
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tools/tests -p 'test_asr10_*.py' -v
+PYTHONDONTWRITEBYTECODE=1 python3 tools/asr10_firmware_inventory.py research_local/asr10_firmware
 git diff --check
 ```
 
-Result: 3 tests passed; Python compilation and whitespace validation passed.
+Python syntax was also checked with the built-in `compile()` on each changed
+tool module, without writing bytecode into the repository.
+
+Result: three capture tests and two inventory tests passed; Python compilation
+and whitespace validation passed.
 The Lua script was source-reviewed but could not be executed because no Lua
 interpreter or OpenASR/MAME binary with the required private media was available
 in this environment. No native/ARM DSP build is claimed for this research-only
@@ -61,15 +73,14 @@ milestone.
 
 ## Next exact action
 
-Obtain the user's legally held ASR-10 OS V3.50 floppy image and matching system
-ROM files. Place them locally according to `/tmp/OpenASR-issue4/floppies/README.md`
-and `roms/README.md`; do not add them to Git. Build/run the pinned OpenASR
-`asr10booth` with the passive Lua observer during boot, effect selection, and a
-single parameter edit. Save output only in a private directory, then reconstruct
-and inspect it. If the firmware does not reach a complete upload, identify the
-exact emulation blocker before changing machine behavior. Do not label a
-candidate factory code until instruction/GPR/RAM state, boundaries, lifecycle,
-readback, and differential execution are validated.
+Obtain a legally held ASR-10 boot ROM pair matching the MAME fingerprints and
+an OS image. Prefer 1.61 or 3.53 until OpenASR's V3.50 baseline is reconciled
+with the service manual note that V3.50 ROMs are ASR-88 only. Extract
+`asr161os.eda` or `asr353os.eda` from the ignored wrappers with a compatible
+non-executing reader, or use a user backup. Run pinned OpenASR with the passive
+observer during boot, effect selection and a parameter edit. Keep logs and
+reconstructed outputs private. Recover full instruction/GPR/RAM state and run
+differential execution before calling an authentic program captured.
 
 ## Preserved project boundaries
 

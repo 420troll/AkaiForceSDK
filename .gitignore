@@ -26,3 +26,6 @@ roms/
 Thumbs.db
 .idea/
 .vscode/
+
+# Private ASR-10 firmware, OS images, factory data, and analysis outputs
+research_local/

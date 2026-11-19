@@ -2,11 +2,14 @@
 
 ## Result for this branch
 
-**No ASR-10 factory microprogram was recovered, replayed, or validated in this
-work session.** OpenASR's OS floppy and system ROM inputs were absent. The
-previously reported 44LUSH and ROM-HALL hashes are not enough to reconstruct
-their programs, GPR initialization or external memory state. No raw capture
-was available for comparison.
+**No complete ASR-10 factory microprogram was recovered, replayed, or validated
+in this work session.** OpenASR's prior V3.50 reports document firmware-driven
+uploads, readback checks and partial ROM-HALL/44LUSH instruction-image hashes,
+terminal words and END indices. The complete instruction arrays, per-index GPR
+state and raw logs are missing from the current workspace, so these partial
+reports cannot be loaded or independently checked. The OS disk and boot ROM
+inputs are also absent. No factory program was replayed against the standalone
+executor or executing MAME device.
 
 The existing plugin continues to run original TROLLfx diagnostic delay and
 chorus programs. No plugin source, binary, UID or Force installation was

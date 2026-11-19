@@ -60,6 +60,14 @@ by its data byte; `$FC3141` commits a GPR/special register; `$FC31C1` commits
 both. This is the host-port transaction format in OpenASR/MAME, not a claim
 about how effect files are serialized on disk.
 
+OpenASR's prior V3.50 runtime report says record type 1 emitted paired GPR and
+instruction latch data through the `$E0` combined commit. That proves the
+runtime pairing, but it does not prove a fixed nine-byte source record format.
+An OS effect file is reportedly a mixed CPU/DSP executable object; firmware
+may decode headers or transform records before issuing these writes.
+`docs/ASR10_FACTORY_LOADER_ANALYSIS.md` records the reported loader sequence,
+program endpoints and missing raw trace.
+
 The parser preserves all original events and only reconstructs commits actually
 seen. It does not fill absent words, infer missing GPRs, infer algorithm names,
 or fabricate external DRAM contents. A first END opcode is reported only as a
