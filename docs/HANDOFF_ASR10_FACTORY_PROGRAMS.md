@@ -30,6 +30,28 @@ and partial ROM-HALL/44LUSH instruction lists, but raw logs and full arrays are
 absent; see `docs/ASR10_FACTORY_LOADER_ANALYSIS.md`. The only new execution
 fixture is synthetic and is explicitly rejected as a complete/authentic capture.
 
+Follow-up static analysis disassembled the `44DDL+CHORUS` effect-local update
+task. It confirms `FxUpdateTask=0x0452` calls routine `0x0468`, which reads
+variable offsets and parameter metadata, smooths/limits stored values, then
+invokes OS service `$801e`; that service's implementation and DSP side effects
+remain unresolved. The task positions its descriptor pointer at
+`FxUcode-14`, but this does not establish a GPR map. The object header stores
+output GPR destinations `0x82` and `0x83` and `FxNumVoices=1` for all 12
+effects. These are output assignments, not initial register values.
+
+`tools/asr10_factory_manifest.py` emits a metadata-only, machine-readable
+cross-version manifest with object hashes, candidate section offsets, word
+counts, trailer sizes, END opcode positions, output GPRs, voice count, and bus
+labels. It emits no firmware or instruction bytes. New reports:
+
+- `docs/ASR10_FACTORY_PROGRAM_MANIFEST.md` and `.json`
+- `docs/ASR10_FXUCODE_LOADER_TRACE.md`
+- `docs/ASR10_GPR_INITIALIZATION.md`
+- `docs/ASR10_FIRST_FACTORY_EXECUTION.md`
+
+The first authentic execution remains **blocked**. Do not replay the static
+candidate with guessed GPR, special-register, or DRAM values.
+
 OpenASR maps `$FC3000–$FC303F` to ES5510 host offsets and `$FC3100/3140/3180/31C0`
 to read/GPR/instruction/combined commit offsets `$80/$A0/$C0/$E0`. PA4 at
 `$FC6823` bit 4 models RUN/HALT. Current machine configuration calls
@@ -61,6 +83,8 @@ unimplemented for VFX; that finding is not transferred to ASR-10 behavior.
 - `tools/asr10_firmware_inventory.py`: hashes/classifies local packages,
   checks boot-ROM fingerprints, reports missing media, inspects ZIP/NE
   metadata, and detects the EDA signature without claiming to parse its format.
+- `tools/asr10_factory_manifest.py`: produces metadata-only 1.61/3.53 effect
+  object comparison; refuses incomplete 12-effect inventories.
 
 ## Validation performed
 
@@ -73,23 +97,29 @@ git diff --check
 Python syntax was also checked with the built-in `compile()` on each changed
 tool module, without writing bytecode into the repository.
 
-Result: all 14 ASR-10 capture, EDA expansion, disk catalog, EFE inspection, and
-firmware inventory tests passed; Python compilation and whitespace validation
-passed.
 The Lua script was source-reviewed but could not be executed because no Lua
 interpreter or OpenASR/MAME binary with the required private media was available
-in this environment. No native/ARM DSP build is claimed for this research-only
-milestone.
+in this environment. The full suite was run after the manifest extension:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+  -s tools/tests -p 'test_asr10_*.py' -v
+git diff --check
+```
+
+All 16 tests passed, including synthetic cross-version inventory, END-index,
+output-GPR, and ASR image/parser checks; `git diff --check` passed. Python
+syntax was checked during the prior milestone. No native or ARM DSP build/audio
+test is claimed because complete authentic initialization is still missing.
 
 ## Next exact action
 
-Disassemble the ASR OS objects and effect-local `FxInitCode`/update-task
-routines as 68k. Trace how they consume `FxUcode` and initialize GPR/delay
-state. Obtain a lawful matching boot-ROM pair, then boot the reconstructed
-disks in pinned OpenASR with the passive observer during effect selection and
-a parameter edit. Keep traces and firmware private. Compare static candidate
-words to actual commits, replay one complete program with captured setup, and
-differential-test against MAME.
+Obtain a lawful matching boot-ROM pair, then boot recovered OS 1.61 or 3.53
+disks in pinned OpenASR with the passive observer during `44DDL+CHORUS`
+selection and a parameter edit. Keep traces and firmware private. Correlate
+the extracted EFE payload hash with instruction commits, GPR values,
+special-register state, delay-memory setup, HALT/RUN, and readback. Replay the captured state
+and differential-test against MAME.
 
 ## Preserved project boundaries
 

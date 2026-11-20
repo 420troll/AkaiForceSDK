@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+import hashlib
 import json
 from pathlib import Path
 
@@ -40,24 +41,55 @@ def inspect(data: bytes) -> dict:
               "fx_size": fx_size, "fx_ucode": ucode, "fx_table": table,
               "fx_init_code": init, "fx_update_task": task,
               "container_padding_bytes": len(data) - fx_size}
+    # The unofficial guide's header continues with three NUL-terminated bus
+    # names, then FxCurrVar, FxOutputGprL/R, FxNumVoices, an unused byte, and
+    # FxKeydownRoutine. Preserve this as header metadata, not DSP init proof.
+    pos = 60
+    limit = min(fx_size, len(data))
+    bus_names: list[str] = []
+    for _ in range(3):
+        if pos >= limit:
+            break
+        end = data.find(b"\0", pos, limit)
+        if end < 0:
+            break
+        bus_names.append(data[pos:end].decode("latin-1"))
+        pos = end + 1
+    if len(bus_names) == 3 and pos + 7 <= limit:
+        result.update(bus_names=bus_names,
+                      fx_current_var=data[pos],
+                      fx_output_gpr_left=data[pos + 1],
+                      fx_output_gpr_right=data[pos + 2],
+                      fx_num_voices=data[pos + 3],
+                      fx_unused_header_byte=data[pos + 4],
+                      fx_keydown_routine=int.from_bytes(data[pos + 5:pos + 7], "big"))
     if not ucode:
         result["candidate_microcode"] = False
         return result
 
     words = (fx_size - ucode) // 6
     remainder = (fx_size - ucode) % 6
+    end_indices: list[int] = []
     alu: Counter[str] = Counter()
     ram: Counter[str] = Counter()
     regs: Counter[int] = Counter()
     for index in range(words):
         word = int.from_bytes(data[ucode + index * 6:ucode + (index + 1) * 6], "big")
         alu[(word >> 12) & 15] += 1
+        if ((word >> 12) & 15) == 15:
+            end_indices.append(index)
         ram[(word >> 3) & 7] += 1
         regs.update(((word >> 16) & 255, (word >> 24) & 255,
                      (word >> 32) & 255, (word >> 40) & 255))
-    result.update(candidate_microcode=True, candidate_words=words,
+    result.update(payload_sha256=hashlib.sha256(data).hexdigest(),
+                  payload_hash_includes_block_padding=True,
+                  candidate_microcode=True,
+                  candidate_byte_start=ucode,
+                  candidate_byte_end_exclusive=fx_size,
+                  candidate_words=words,
                   section_remainder_bytes=remainder,
                   end_opcode_words=alu[15],
+                  end_opcode_indices=end_indices,
                   alu_counts={ALU_NAMES[k]: v for k, v in sorted(alu.items())},
                   ram_control_counts={RAM_NAMES[k]: v for k, v in sorted(ram.items())},
                   distinct_register_fields=len(regs),
