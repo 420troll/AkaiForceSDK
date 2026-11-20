@@ -12,9 +12,10 @@ if [[ ! -f "$rom" || ! "$project" =~ ^[A-Za-z0-9._-]+$ ]]; then
   echo "ROM must exist and project name must be a simple filename" >&2
   exit 2
 fi
-: "${GHIDRA_INSTALL_DIR:?set GHIDRA_INSTALL_DIR to the isolated Ghidra installation}"
-: "${JAVA_HOME:?set JAVA_HOME to a compatible JDK}"
-headless="$GHIDRA_INSTALL_DIR/support/analyzeHeadless"
+: "${GHIDRA_INSTALL_DIR:=${GHIDRA_HOME:-}}"
+[[ -n "$GHIDRA_INSTALL_DIR" ]] || { echo "set GHIDRA_INSTALL_DIR (or GHIDRA_HOME)" >&2; exit 2; }
+export GHIDRA_HOME="$GHIDRA_INSTALL_DIR"
+headless="$(dirname "$(realpath "$0")")/../ghidra_headless.sh"
 [[ -x "$headless" ]] || { echo "not executable: $headless" >&2; exit 2; }
 mkdir -p "$work"
 exec "$headless" "$work" "$project" \

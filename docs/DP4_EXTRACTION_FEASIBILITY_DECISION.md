@@ -5,6 +5,12 @@ Baseline requested: `c06ac8992f1e4ff3d20dab0f51f901e5637b543f`
 Analysis date: 2026-11-19
 ROMs and full analysis outputs: private under `/tmp/dp4-rom-forensics`; none are committed.
 
+Current environment availability, Ghidra/JDK setup, and the resumed evidence
+boundary as of 2026-11-20 are recorded in
+[`DP4_SESSION_RESUME_2026-11-20.md`](DP4_SESSION_RESUME_2026-11-20.md). The
+earlier static findings below were preserved; their private binaries were not
+available for rehashing in that resumed session.
+
 ## Decision
 
 **One CPU-to-U54 read path is now verified in software across both ROM revisions. No CPU-to-ES5510 instruction or GPR write has yet been identified, so no factory microprogram can yet be claimed as recovered.** Software-only extraction remains technically plausible: the base board, CPU family, U56 window, U54 bank wiring, and U54 revision-tag access are now established. It is not demonstrated end-to-end because the U56-to-ESP execution path depends on runtime pointers and an incompletely reduced ESP address decoder.
