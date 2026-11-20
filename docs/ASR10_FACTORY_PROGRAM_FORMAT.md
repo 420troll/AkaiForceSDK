@@ -10,27 +10,65 @@ the sample program uses a dummy ESP area and states that real ESP code is
 assembled/linked separately. The guide also says an ESP section is required
 for download, even if it is only a pass-through program.
 
-This materially narrows the search: a compatible ASR-10 effect file can be a
-mixed host-CPU/DSP executable object, not just a parameter preset. It does not
-reveal the actual factory files' byte layout, instruction packing, compression,
-transfer boundaries, or whether built-in effects are stored in OS ROM, disk
-files, or both. The guide is explicitly unofficial and cannot stand in for a
-captured factory transfer. It does **not** establish that raw files have the
-same header/version layout across EPS-16 Plus and ASR-10 revisions.
+The extracted ASR disk images now supply real factory effect objects. Their
+headers are consistent with this field map: `FxName` at offset 10 (24 spaced
+bytes), `FxSize` at 34, `FxUcode` at 38, `FxTable` at 40, `FxInitCode` at 42,
+and update-task pointer at 44. Their `FxUcode` values point inside the objects
+to sections that decode as consecutive six-byte big-endian words. Those
+sections contain 82–103 words, including the ES5510 `END` opcode, and fit the
+160-word program memory limit. The header/object relationship and section
+statistics are reproduced by `tools/asr10_efe_inspect.py`.
 
-## No factory binary format is yet verified
+This is strong static identification of factory microprogram sections in
+disk-loaded ASR effect objects. It does not establish that these objects
+account for all built-in effects, nor does it confirm exact code termination,
+the meaning of residual bytes, GPR/delay-memory initialization, host transfer
+boundaries, or execution. The guide is unofficial and still requires a
+firmware loader/host-transaction correlation.
 
-There is currently no evidence in this checkout that an ASR-10 effect disk
-file is itself a raw 48-bit instruction stream. MAME's ES5510 logging decoder
-does not define an ASR-10 disk format. Its pinned `es5510d.cpp` is a stub.
-OpenASR's actual host interface accepts six byte instruction latches, 24-bit
-GPR latches, selected commits and control writes. This makes the executed
-CPU-to-ES5510 transaction stream the best-supported acquisition boundary.
+## Static recovery status and unresolved runtime format
 
-Possible origins include OS-resident code, a disk-loaded effect object, or a
-mixture of DSP program and parameters. These remain hypotheses until firmware
-reads are correlated with ES5510 commits during effect selection. A preset
-name or parameter block alone is not executable microcode evidence.
+An entire ASR effect file is not a raw instruction stream: the header includes
+host-side pointers and the object contains other data/code before and around
+the `FxUcode` region. The located code section is a candidate 48-bit stream,
+not yet proven to be the exact bytes uploaded. MAME's pinned `es5510d.cpp` is a
+stub and does not define the disk file format. OpenASR's host interface accepts
+six-byte instruction latches, 24-bit GPR latches, selected commits and control
+writes. Firmware-generated CPU-to-ES5510 transactions remain the strongest
+runtime validation boundary.
+
+The disk-loaded effect object contains both candidate DSP code and host code.
+The 13 ASR effect payloads were byte-identical across OS 1.61 and 3.53. Their
+header pointers and code-section statistics are listed in
+`ASR10_FIRMWARE_INVENTORY.md`. A candidate region is stronger than a preset
+name, but full authenticity still needs loader correlation and execution.
+
+## Recovered objects and candidate code statistics
+
+The following information is emitted by the metadata-only inspector; no
+program bytes are printed. Word counts use the FxUcode-to-FxSize interval in
+six-byte steps, and `END` counts use the pinned MAME field decoder. Remaining
+1–5 bytes within the declared logical object size are unresolved trailer data.
+
+| Object | FxSize | FxUcode | Candidate words | END words |
+|---|---:|---:|---:|---:|
+| `44DDL+CHORUS` | 3161 | `0x0a3c` | 90 | 14 |
+| `44DDL+CH+REV` | 7458 | `0x1abe` | 102 | 14 |
+| `44DLYLFO+REV` | 4873 | `0x109e` | 103 | 22 |
+| `44EQ+DDL` | 4623 | `0x1000` | 87 | 4 |
+| `44EQ+DDL+CHO` | 7261 | `0x1a5e` | 85 | 19 |
+| `44EQ+REVERB` | 6093 | `0x1578` | 99 | 31 |
+| `44EQ+ROT+DDL` | 5353 | `0x12c2` | 91 | 5 |
+| `44LUSH PLAT2` | 3829 | `0x0ca6` | 98 | 25 |
+| `44LUSH PLATE` | 3984 | `0x0d42` | 98 | 17 |
+| `44PARAM EQ` | 3047 | `0x09fa` | 82 | 2 |
+| `44PERC PLATE` | 3984 | `0x0d42` | 98 | 17 |
+| `44ROTO+REVRB` | 5121 | `0x1194` | 103 | 20 |
+
+The object table has coherent headers and a common 160-word-compatible size,
+but these facts alone cannot prove every word belongs to the live program. In
+particular, the `FxUcode` region's remainder must be explained from loader
+code or real host commits.
 
 The VFX Musician's Manual independently documents a MIDI command type 03
 labelled “ESP Microcode Program Load” but explicitly says that command is

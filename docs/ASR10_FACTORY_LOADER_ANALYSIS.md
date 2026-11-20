@@ -105,9 +105,15 @@ unnamed. Do not interpret those as algorithm indices or DSP coefficients.
 ## Version coverage
 
 Only V3.50 is covered by the historical loader trace reports reviewed here.
-The currently acquired 1.61 and 3.53 files are NE installer wrappers whose
-embedded archive members have not been extracted. No cross-version loader
-comparison or algorithm-data diff is possible from those wrappers alone.
+OS 1.61 and 3.53 installers have since been executed in isolated Wine
+containers; their EDA images were expanded and cataloged. The two disks
+contain byte-identical ASR effect objects, including candidate FxUcode
+sections, while their OS objects differ. See
+`ASR10_FIRMWARE_EXTRACTION_REPORT.md` and
+`ASR10_FIRMWARE_INVENTORY.md`. No cross-version loader comparison or
+firmware-to-host-commit trace has yet been performed. V3.50 ASR-10
+compatibility remains unresolved: OpenASR documents it as a baseline, while
+the ASR service manual says V3.50 ROMs are for ASR-88 only.
 V3.50 ASR-10 compatibility is also unresolved: OpenASR documents it as a
 baseline, while the ASR service manual says V3.50 ROMs are for ASR-88 only.
 

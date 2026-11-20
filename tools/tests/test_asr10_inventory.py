@@ -29,4 +29,19 @@ class InventoryTest(unittest.TestCase):
             result=inventory.inspect(p)
             self.assertFalse(result["fingerprint_match"])
 
+    def test_asr_diskwriter_header_is_not_mislabeled_as_raw_or_microcode(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/"asr161os.eda"
+            p.write_bytes(b"\r\nASR-10 Disk"+b"\0"*100)
+            result=inventory.inspect(p)
+            self.assertIn("DiskWriter EDA image",result["format"])
+            self.assertFalse(result["raw_floppy_image"])
+            self.assertIn("unparsed",result["internal_layout"])
+
+    def test_unknown_eda_suffix_does_not_imply_verified_asr_image(self):
+        with tempfile.TemporaryDirectory() as d:
+            p=Path(d)/"unknown.eda"; p.write_bytes(b"not an identified image")
+            result=inventory.inspect(p)
+            self.assertEqual(result["format"],"unverified Ensoniq disk-image candidate")
+
 if __name__=="__main__": unittest.main()

@@ -12,11 +12,20 @@
 This milestone implements passive capture and offline reconstruction tooling,
 documents ASR-10/OpenASR host protocol evidence, and captures the distinction
 between the runtime host protocol and the effect-file container. It does **not**
-recover a complete replayable factory program. Two Chicken Systems OS update
-self-extractors (1.61 and 3.53) were downloaded as inert data to ignored
-`research_local/asr10_firmware/` and hash-verified. Their embedded EDA images
-remain unextracted. No boot ROMs, raw OS images or factory effect files were
-available. OpenASR contains prior committed V3.50 reports of firmware transfers
+recover a complete replayable factory program. The 1.61 and 3.53 installer
+payloads have now been recovered in isolated, network-disabled 32-bit Wine
+containers. Their `.EDA` files, reconstructed raw images, OS object and effect
+objects are hash-verified and remain under ignored
+`research_local/asr10_firmware/recovered/`. The images' filesystem structures
+validate, but they have not been booted. No authentic factory ES5510 program
+has been replayed or runtime-captured. Static inspection of 12 recovered ASR
+effect objects found guide-consistent `FxUcode` pointers and six-byte ES5510
+candidate regions of 82–103 words with `END` opcodes. These are strong static
+factory-program candidates; their exact boundaries, GPR/memory initialization
+and loader correlation remain unverified. Details and hashes are in
+`docs/ASR10_FIRMWARE_EXTRACTION_REPORT.md` and
+`docs/ASR10_FIRMWARE_INVENTORY.md`. The boot ROM pair remains unavailable.
+OpenASR contains prior committed V3.50 reports of firmware transfers
 and partial ROM-HALL/44LUSH instruction lists, but raw logs and full arrays are
 absent; see `docs/ASR10_FACTORY_LOADER_ANALYSIS.md`. The only new execution
 fixture is synthetic and is explicitly rejected as a complete/authentic capture.
@@ -50,8 +59,8 @@ unimplemented for VFX; that finding is not transferred to ASR-10 behavior.
 - `tools/tests/test_asr10_capture.py`: tests byte ordering, commit behavior,
   synthetic classification and invalid input.
 - `tools/asr10_firmware_inventory.py`: hashes/classifies local packages,
-  checks known boot-ROM fingerprints, reports missing media and inspects
-  ZIP/NE metadata without running installers.
+  checks boot-ROM fingerprints, reports missing media, inspects ZIP/NE
+  metadata, and detects the EDA signature without claiming to parse its format.
 
 ## Validation performed
 
@@ -64,8 +73,9 @@ git diff --check
 Python syntax was also checked with the built-in `compile()` on each changed
 tool module, without writing bytecode into the repository.
 
-Result: three capture tests and two inventory tests passed; Python compilation
-and whitespace validation passed.
+Result: all 14 ASR-10 capture, EDA expansion, disk catalog, EFE inspection, and
+firmware inventory tests passed; Python compilation and whitespace validation
+passed.
 The Lua script was source-reviewed but could not be executed because no Lua
 interpreter or OpenASR/MAME binary with the required private media was available
 in this environment. No native/ARM DSP build is claimed for this research-only
@@ -73,14 +83,13 @@ milestone.
 
 ## Next exact action
 
-Obtain a legally held ASR-10 boot ROM pair matching the MAME fingerprints and
-an OS image. Prefer 1.61 or 3.53 until OpenASR's V3.50 baseline is reconciled
-with the service manual note that V3.50 ROMs are ASR-88 only. Extract
-`asr161os.eda` or `asr353os.eda` from the ignored wrappers with a compatible
-non-executing reader, or use a user backup. Run pinned OpenASR with the passive
-observer during boot, effect selection and a parameter edit. Keep logs and
-reconstructed outputs private. Recover full instruction/GPR/RAM state and run
-differential execution before calling an authentic program captured.
+Disassemble the ASR OS objects and effect-local `FxInitCode`/update-task
+routines as 68k. Trace how they consume `FxUcode` and initialize GPR/delay
+state. Obtain a lawful matching boot-ROM pair, then boot the reconstructed
+disks in pinned OpenASR with the passive observer during effect selection and
+a parameter edit. Keep traces and firmware private. Compare static candidate
+words to actual commits, replay one complete program with captured setup, and
+differential-test against MAME.
 
 ## Preserved project boundaries
 

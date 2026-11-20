@@ -30,6 +30,9 @@ def inspect(path: Path) -> dict:
         row["fingerprint_match"]=(len(data)==exp["size"] and crc==exp["crc32"] and row["sha1"]==exp["sha1"])
     if data.startswith(b"MZ"):
         row["format"]="DOS executable/container; not executed"
+        if b"Giebler Enterprises Ensoniq Disk Extractor" in data and b"EDE.Exe" in data:
+            row.update(format="DOS MZ Ensoniq Disk Extractor utility (identified by embedded strings; not executed)",
+                       product_version="1.0.9 (reported in accompanying installer text)")
         if len(data)>=0x40:
             ne=struct.unpack_from("<I",data,0x3c)[0]
             if ne+0x40<=len(data) and data[ne:ne+2]==b"NE":
@@ -49,8 +52,14 @@ def inspect(path: Path) -> dict:
             with zipfile.ZipFile(path) as z:
                 row["archive_members"]=[{"name":i.filename,"size":i.file_size,"crc32":f"{i.CRC:08x}"} for i in z.infolist()]
         except (OSError,zipfile.BadZipFile) as e: row["archive_error"]=str(e)
+    elif path.suffix.lower()==".txt" and b"DiskWrite" in data and b"ASR" in data:
+        row["format"]="Ensoniq DiskWriter instructions (text)"
     elif path.suffix.lower() in (".img",".eda",".hfe",".mfi",".dsk",".efe"):
-        row["format"]={".img":"raw disk image candidate",".eda":"Ensoniq ASR disk-image candidate",".hfe":"HxC floppy image candidate",".mfi":"MAME floppy image candidate",".dsk":"disk-image candidate",".efe":"Ensoniq effect-file candidate"}[path.suffix.lower()]
+        row["format"]={".img":"raw disk image candidate",".eda":"unverified Ensoniq disk-image candidate",".hfe":"HxC floppy image candidate",".mfi":"MAME floppy image candidate",".dsk":"disk-image candidate",".efe":"Ensoniq effect-file candidate"}[path.suffix.lower()]
+        if path.suffix.lower()==".eda" and data.startswith(b"\r\nASR-10 Disk"):
+            row.update(format="Ensoniq ASR-10 DiskWriter EDA image (header signature verified; internal layout unparsed)",
+                       image_header_marker="\\r\\nASR-10 Disk", raw_floppy_image=False,
+                       internal_layout="unparsed; do not treat as raw sector image or executable microcode")
     return row
 
 def main() -> int:
