@@ -87,9 +87,12 @@ instruction list is not enough to recreate it.
 
 The “first END” is a boundary in the generic MAME interpretation; it is not a
 physical proof of ASR frame scheduling, HALT timing or factory effect sound.
-OpenASR's current machine config calls `set_disable()` on the ES5510, and the
-documented audio-routing spikes were synthetic experiments, not physical ASR
-board measurements.
+The ASR machine calls `set_disable()` to remove the ES5510 from normal
+scheduler execution, while `esqpump` calls `run_once()` for each sample when
+released and built with real processing. The former does not by itself imply
+the loaded program is never executed. The pump's serial policy is still
+provisional, and the historical routing spikes were not physical board
+measurements.
 
 ## Effect parameters and reconfiguration
 

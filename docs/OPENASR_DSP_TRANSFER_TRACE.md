@@ -15,8 +15,12 @@ In OpenASR commit `241f9331477b07b072330ca6ebd2d7a2e2cc832e`,
 
 The source comment and `mc68302_pa_w` identify PA4 (PADAT `$FC6823`, bit 4) as
 the modeled DSP RUN/HALT line. Low asserts halt; high releases it. The
-configuration also calls `set_disable()` on the ES5510 device, so this wiring
-does not mean the default scheduler is executing a loaded effect program.
+configuration also calls `set_disable()` on the ES5510 device, removing it
+from normal scheduler execution. Separately, the pump manually calls
+`run_once()` when released with real processing enabled. The wiring therefore
+can execute the loaded instructions through the pump, but only if firmware
+uploads a program and releases HALT. Neither that firmware path nor the pump's
+audio routing is validated against physical ASR hardware here.
 
 ## Historical OpenASR report, not independently reproducible in this checkout
 
@@ -43,7 +47,7 @@ and the limits on interpreting these results.
 ## Passive recorder
 
 `tools/asr10_es5510_trace.lua` observes CPU program-space reads/writes in the
-ES5510 windows and PA4 data-register writes. It prints `T551CAP` TSV rows with
+ES5510 windows, boot-vector reads, and floppy-controller accesses. It prints `T551CAP` TSV rows with
 sequence, address, data, mask, current PC, event class, source revisions and
 emulated time. Tap handles remain rooted for the life of the script. It does
 not modify host or DSP state. The PC is contextual evidence only; host
@@ -66,9 +70,21 @@ records MAME's emulated CPU transactions.
 
 ## Current execution result
 
-No new firmware boot or transaction trace was run in this pass: OpenASR's
-documented floppy/ROM directories contain no images and the local machine has
-no user-provided ASR-10 OS image. Therefore the current branch has **zero
-firmware-generated capture events**. The synthetic unit test is only a parser
-test, explicitly tagged as synthetic and never accepted as an authentic
-program.
+The verified ASR-10 v1.5b ROM pair and reconstructed OS 1.61/3.53 disks were
+run in the pinned OpenASR machine. The ROM set passed MAME verification and
+CPU-space taps under the stock ROM declarations returned reset vector words
+`0x0300` and `0x000C`. This corrects an earlier mistaken lane-swap
+interpretation; see `ASR10_BOOT_ROM_RUNTIME_CHECK.md`.
+
+Each 30-second run emitted 293 CPU-space events: 87 boot-ROM reads, 30 direct
+ES5510 host writes, 161 combined commits, 12 GPR commits and 3 host reads. The
+combined commits initialize all 160 program slots to `0xFFFFFFFFFFFF`; the
+captured parameter registers are boot defaults, not a selected effect. No
+floppy-controller register access occurred. A separate OpenASR PA4 callback
+instrumentation run logged two high/release transitions before `received=1`
+and then a low/halt transition; it remained halted. No OS boot, effect
+selection, or factory program upload was captured. The capture reconstructor
+correctly labels the output incomplete and `validated_factory_program=false`.
+
+The synthetic unit test remains only a parser test. Neither it nor the observed
+all-FF blank program memory is an authentic factory program.

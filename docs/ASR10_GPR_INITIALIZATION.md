@@ -8,6 +8,14 @@ code and data, but the current static evidence does not map the effect
 parameters or object bytes to final ES5510 GPRs, special registers, or external
 delay-memory contents.
 
+The v1.5b boot ROM now has a private runtime trace. It writes blank
+instruction-memory words and startup/special-register defaults before the
+OpenASR PA4 callback halts the DSP. That initialization is not associated with
+any factory effect and is incomplete for external DRAM (no DADR writes and no
+modeled ABASE/BBASE writes). It must not be substituted for the per-effect
+initialization listed below. Exact values are in
+`ASR10_BOOT_ROM_RUNTIME_CHECK.md`.
+
 ## Evidence inventory
 
 | Initialization element | Available evidence | Status |

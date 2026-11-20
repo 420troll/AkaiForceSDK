@@ -1,0 +1,4 @@
+--- a/src/mame/ensoniq/asr10_boot.cpp
++++ b/src/mame/ensoniq/asr10_boot.cpp
+@@ -666,0 +667 @@
++	logerror("T551_PA data=%04X run=%d received=%d loaded=%d\n", data, run, m_esp_program_received, m_esp_program_loaded);

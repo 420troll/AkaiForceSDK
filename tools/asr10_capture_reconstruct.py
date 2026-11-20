@@ -35,7 +35,12 @@ def reconstruct(text: str) -> dict:
             lifecycle.append({"seq":e["seq"],"event":"padat_write","data":d,
                               "pa4_run_model":bool(d & 0x10),"pc":e["pc"]})
         if e["kind"]=="host_w" and 0x00FC3000 <= a <= 0x00FC303F:
-            off=a-0x00FC3000
+            # MAME's 16-bit program-space tap reports the aligned word base.
+            # The ASR host map is 8-bit on the active low lane, so consecutive
+            # ES5510 latches appear at FC3000, FC3002, ... in the tap. Preserve
+            # compatibility with older fixtures/logs that reported byte addresses.
+            word_base=any("host_address_encoding=word_base_16bit_active_low_byte" in x for x in metadata)
+            off=(a-0x00FC3000)//2 if word_base else a-0x00FC3000
             # OpenASR maps these host offsets to the MAME ES5510 latch interface.
             if off <= 0x02 or 0x03 <= off <= 0x08: latches[off]=d & 0xff
             elif off in (0x0f,0x10,0x11,0x12,0x14,0x18,0x1f):
@@ -74,7 +79,7 @@ def reconstruct(text: str) -> dict:
     validated=(valid_meta and not fixture and lifecycle_ok and contiguous and bool(end_indices)
                and bool(regs) and "244" in special and "245" in special)
     return {"schema":"trollfx.asr10-es5510-host-capture.v1",
-      "source_class":"synthetic_test_fixture" if fixture else ("mame_runtime_firmware_write_observation" if valid_meta else "unattributed_trace"),
+      "source_class":"synthetic_test_fixture" if fixture else ("openasr_cpu_program_space_firmware_write_observation" if valid_meta else "unattributed_trace"),
       "capture_status":"candidate_complete_needs_independent_review" if validated else "incomplete",
       "validated_factory_program":False,
       "metadata_lines":metadata,"event_count":len(events),"events":events,
@@ -84,7 +89,10 @@ def reconstruct(text: str) -> dict:
       "special_registers":special,"candidate_end_indices":end_indices,
       "program_indices_contiguous_from_zero":contiguous,
       "halt_run_sequence_observed":lifecycle_ok,
-      "limitations":["Tap evidence is OpenASR/MAME execution, not physical pin capture.",
+      "limitations":["Tap evidence is CPU program-space traffic in OpenASR, not physical pin capture.",
+        "For host_address_encoding=word_base_16bit_active_low_byte, direct host-port tap addresses are aligned word bases and map to byte registers at a two-byte stride.",
+        "PA4/RUN-HALT is an OpenASR MC68302 callback and is not represented by a memory-space tap at $FC6822/$FC6823.",
+        "OpenASR's ES5510 execution core differs from the pinned upstream MAME reference; CPU writes do not establish core conformance.",
         "Program boundaries and completeness require independent validation against firmware selection and ES5510 behavior.",
         "This parser does not infer omitted writes, delay RAM contents, or firmware identity.",
         "The PA4 interpretation reflects the OpenASR model and is not an electrical measurement."]}

@@ -3,17 +3,23 @@
 ## Preparation
 
 1. Build OpenASR at commit `241f9331477b07b072330ca6ebd2d7a2e2cc832e` with
-   Lua support; record the actual binary build and MAME version.
+   Lua support; record the actual binary build and MAME version. A local build
+   and boot attempt were completed; current results are in
+   `ASR10_BOOT_ROM_RUNTIME_CHECK.md`.
 2. Obtain an OS floppy and system ROMs through lawful means. OpenASR's
    `floppies/README.md` and `roms/README.md` describe the expected local paths;
    neither is distributed. Record private SHA-256 hashes, but do not add
    payloads to Git or public CI.
 3. Use a private working directory for stdout trace, reconstructed JSON,
    bundles, disassembly and WAV files.
-4. Check OpenASR's ES5510 model/runtime configuration. Current source calls
-   `set_disable()`, so uploaded words can be observed without proving that the
-   default machine executes them. Do not silently change the CPU timing or pump
-   and call that original behavior.
+4. Check OpenASR's ES5510 model/runtime configuration. The ASR machine calls
+   `set_disable()` to remove the chip from normal scheduler execution, while
+   `esqpump.cpp::sound_stream_update()` manually calls `run_once()` per sample
+   when the DSP is released (unless fake processing is compiled in). Therefore
+   a real upload plus HALT release can reach instruction execution in this
+   model. Confirm the build flags, observed release, and pump path in the run
+   log; this is not evidence of physical timing or routing fidelity. Do not
+   silently change timing/pump behavior and call it original.
 
 ## Capture
 
@@ -30,8 +36,10 @@ verified. Observe:
 - direct host control, DADR, RAM-select, serial and halt-enable accesses.
 - later isolated GPR writes when adjusting a single effect parameter.
 
-The tap itself is passive and logs raw CPU events. It does not change memory,
-halt the emulation, or write programs into the device.
+The Lua tap itself is passive and logs raw CPU events. It does not change
+memory, halt the emulation, or write programs into the device. PA4 is not
+available from the tapped program-space map; the observed callback transitions
+came from a separate build-only log in the OpenASR model.
 
 ## Reconstruct and replay
 

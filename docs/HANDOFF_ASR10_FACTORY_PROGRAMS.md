@@ -1,5 +1,34 @@
 # Handoff — ASR-10 ES5510 factory-program capture
 
+## Runtime update — 2026-11-20
+
+The matching ASR-10 v1.5b boot ROMs were found in the private PC backup,
+checksum-verified, and passed OpenASR/MAME `-verifyroms`. Headless Ghidra is
+configured with OpenJDK 21 through `tools/ghidra_headless.sh`; `--help` runs
+without the interactive JDK chooser. Ghidra disassembly and passive runtime
+capture now show an ASR boot-ROM ES5510 initialization path.
+
+Important correction: the pinned OpenASR ROM declarations were **not** changed
+for the final run. MAME's CPU-space taps under the stock declarations returned
+reset vector words `0x0300` and `0x000C`. A temporary swapped-lane experiment
+returned `0x0003` and `0x0C00` and was reverted. Earlier claims that stock
+OpenASR had the wrong reset vectors are withdrawn.
+
+The 1.61 and 3.53 runtime runs each produced 293 traced CPU-space events,
+including 160 combined commits of the all-FF blank instruction image. No
+floppy-controller access occurred, so neither OS boot nor effect selection
+was established. A separate instrumented callback run observed PA4 modeled
+release twice before any program was received, then halt; no factory upload or
+factory execution was captured. The traces are incomplete and must not be
+replayed as effects. Exact evidence, hashes, commands, limitations and next
+steps are in [the runtime report](ASR10_BOOT_ROM_RUNTIME_CHECK.md).
+
+This ASR-10 work is distinct from DP/4: the DP/4 U54/U56 ROM files and prior
+Ghidra project are absent from this current machine's inspected paths. The
+existing DP/4 bank-9 tag and capture recommendation remain in the DP/4 docs;
+do not project ASR-10 firmware routines or `$FC30xx` host addresses onto that
+hardware.
+
 ## Branch and source pins
 
 - AkaiForceSDK branch: `feature/5510-asr10-factory-programs`
@@ -15,16 +44,18 @@ between the runtime host protocol and the effect-file container. It does **not**
 recover a complete replayable factory program. The 1.61 and 3.53 installer
 payloads have now been recovered in isolated, network-disabled 32-bit Wine
 containers. Their `.EDA` files, reconstructed raw images, OS object and effect
-objects are hash-verified and remain under ignored
-`research_local/asr10_firmware/recovered/`. The images' filesystem structures
-validate, but they have not been booted. No authentic factory ES5510 program
+objects are hash-verified and remain outside the public repository. The
+images' filesystem structures validate. OpenASR attempts with both images
+recorded no floppy-controller access, so OS boot remains unestablished. No authentic factory ES5510 program
 has been replayed or runtime-captured. Static inspection of 12 recovered ASR
 effect objects found guide-consistent `FxUcode` pointers and six-byte ES5510
 candidate regions of 82–103 words with `END` opcodes. These are strong static
 factory-program candidates; their exact boundaries, GPR/memory initialization
 and loader correlation remain unverified. Details and hashes are in
 `docs/ASR10_FIRMWARE_EXTRACTION_REPORT.md` and
-`docs/ASR10_FIRMWARE_INVENTORY.md`. The boot ROM pair remains unavailable.
+`docs/ASR10_FIRMWARE_INVENTORY.md`. A later local PC backup supplies a
+fingerprint-verified v1.5b boot ROM pair; runtime boot validation is recorded
+in `docs/ASR10_BOOT_ROM_RUNTIME_CHECK.md`.
 OpenASR contains prior committed V3.50 reports of firmware transfers
 and partial ROM-HALL/44LUSH instruction lists, but raw logs and full arrays are
 absent; see `docs/ASR10_FACTORY_LOADER_ANALYSIS.md`. The only new execution
@@ -54,9 +85,12 @@ candidate with guessed GPR, special-register, or DRAM values.
 
 OpenASR maps `$FC3000–$FC303F` to ES5510 host offsets and `$FC3100/3140/3180/31C0`
 to read/GPR/instruction/combined commit offsets `$80/$A0/$C0/$E0`. PA4 at
-`$FC6823` bit 4 models RUN/HALT. Current machine configuration calls
-`es5510_host.set_disable()`, so this host model does not mean the normal machine
-scheduler executes the chip.
+`$FC6823` bit 4 models RUN/HALT. The machine calls `es5510_host.set_disable()`
+to remove normal scheduler execution; however, the audio pump explicitly calls
+`run_once()` per sample when HALT is released and `PUMP_FAKE_ESP_PROCESSING=0`.
+Thus the source can execute uploaded instructions through the pump, but this
+does not establish that a compatible firmware boot uploads a complete factory
+program or that the modeled audio route/timing matches hardware.
 
 The local unofficial ESP1 guide describes an ASR/EPS effects-file structure
 that can contain global/parameter data, 68k init/task code and a separate ESP
@@ -68,8 +102,9 @@ unimplemented for VFX; that finding is not transferred to ASR-10 behavior.
 ## New tools
 
 - `tools/asr10_es5510_trace.lua`: passive OpenASR/MAME CPU-space taps; no state
-  changes. Retains tap handles and logs reads/writes/commits/PADAT with PC and
-  emulation time.
+  changes. Retains tap handles and logs program-space reads/writes, commits,
+  boot reads, floppy-window activity, PC and emulation time. PA4 is recorded
+  separately at the OpenASR callback boundary, not inferred from fallback RAM.
 - `tools/asr10_capture_reconstruct.py`: reconstructs byte-latch values at
   commit time, preserves raw events and labels incomplete captures. It refuses
   inputs/outputs inside the repository.
@@ -97,9 +132,8 @@ git diff --check
 Python syntax was also checked with the built-in `compile()` on each changed
 tool module, without writing bytecode into the repository.
 
-The Lua script was source-reviewed but could not be executed because no Lua
-interpreter or OpenASR/MAME binary with the required private media was available
-in this environment. The full suite was run after the manifest extension:
+The Lua recorder was executed with the private ROM/media in the research
+container. The full suite was run after the manifest extension:
 
 ```sh
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
@@ -107,19 +141,23 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
 git diff --check
 ```
 
-All 16 tests passed, including synthetic cross-version inventory, END-index,
-output-GPR, and ASR image/parser checks; `git diff --check` passed. Python
-syntax was checked during the prior milestone. No native or ARM DSP build/audio
-test is claimed because complete authentic initialization is still missing.
+The ASR suite was rerun on 2026-11-20 after the capture-address correction;
+all 16 tests passed. `sh -n tools/ghidra_headless.sh` and `git diff --check`
+passed. The Ghidra wrapper displayed headless usage with an explicit JDK and
+no picker. MAME `-verifyroms asr10booth -rompath /src/roms` passed in the
+research container. No native or ARM DSP build/audio test is claimed because
+complete authentic initialization is still missing.
 
 ## Next exact action
 
-Obtain a lawful matching boot-ROM pair, then boot recovered OS 1.61 or 3.53
-disks in pinned OpenASR with the passive observer during `44DDL+CHORUS`
-selection and a parameter edit. Keep traces and firmware private. Correlate
-the extracted EFE payload hash with instruction commits, GPR values,
-special-register state, delay-memory setup, HALT/RUN, and readback. Replay the captured state
-and differential-test against MAME.
+Diagnose why the current OpenASR boot run does not access the inserted OS
+floppy. Instrument FDC command/status, DMA and interrupt/wait state, and
+determine whether the emulated controller requires media geometry or status
+behavior not currently provided. Once OS sectors are read, use the passive
+observer during `44DDL+CHORUS` selection and a parameter edit. Keep traces and
+firmware private. Correlate the extracted EFE payload hash with instruction
+commits, GPR values, special-register state, delay-memory setup, HALT/RUN, and
+readback. Replay the captured state and differential-test against MAME.
 
 ## Preserved project boundaries
 

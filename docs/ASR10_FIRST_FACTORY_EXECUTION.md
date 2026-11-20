@@ -51,13 +51,14 @@ No ARMv7 or Force build was needed because no plugin code was changed.
 
 ## Exact blockers
 
-1. The ASR boot ROM pair required by OpenASR is absent. Expected files and
-   fingerprints are in `ASR10_FIRMWARE_INVENTORY.md`; neither ROM is claimed
-   acquired.
-2. No reproducible OpenASR boot/selection capture for the recovered 1.61 or
-   3.53 media exists in this workspace. The older V3.50 research report's raw
-   traces and full instruction/GPR arrays are absent and V3.50 ASR-10
-   compatibility is unresolved.
+1. OpenASR accepts the hash-verified boot-ROM pair. CPU-space taps under the
+   unmodified pinned driver return reset vector words `0x0300` and `0x000C`;
+   the earlier swapped-lane interpretation was incorrect.
+2. A 30-second run with each recovered 1.61/3.53 disk produced boot-ROM
+   traffic and blank ES5510 setup, but no floppy-controller accesses. OS boot
+   and effect selection are not established. The older V3.50 research
+   report's raw traces and full instruction/GPR arrays are absent and V3.50
+   ASR-10 compatibility is unresolved.
 3. The complete 68k OS service implementation for `$801e` and relevant
    initialization calls is not mapped from the disk object to a running
    firmware address space.
@@ -71,16 +72,19 @@ No ARMv7 or Force build was needed because no plugin code was changed.
 
 ## Next concrete milestone
 
-Acquire the matching ASR boot ROM dumps from owned chips, verify them against
-the exact MAME/OpenASR fingerprints in the inventory, then boot the already
-recovered OS 1.61 or 3.53 disk in the pinned OpenASR machine. Add effect
-selection for `44DDL+CHORUS` and capture, without filtering, all host latch
-writes, commits, readbacks, HALT/RUN and serial/control operations. Capture
-effect-variable edits as a second run. Use the captured upload—not the static
-candidate interval—to reconstruct a private bundle with complete setup.
-Differentially execute that bundle in MAME and TROLLfx, then render silence,
-impulse, sine and transients. This is the shortest non-speculative path to
-first factory execution.
+Diagnose the OS boot wait first: add passive logging for FDC command/status,
+DMA, IRQ and relevant firmware wait state, then establish that OS sectors are
+actually read from 1.61 or 3.53. Once the UI is running, select
+`44DDL+CHORUS` and capture, without filtering, host latch writes, commits,
+readbacks, HALT/RUN and serial/control operations. Capture effect-variable
+edits as a second run. Use the captured upload—not the static candidate
+interval—to reconstruct a private bundle with complete setup. Differentially
+execute that bundle in MAME and TROLLfx, then render silence, impulse, sine and
+transients. This is the shortest non-speculative path to first factory
+execution.
+
+Runtime details, exact input hashes, and the distinction between ASR-10
+evidence and DP/4 findings are in `ASR10_BOOT_ROM_RUNTIME_CHECK.md`.
 
 Never publish firmware, effect payloads, captured instruction arrays or
 private replay bundles. No Force plugin or installation was modified.

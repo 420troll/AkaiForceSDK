@@ -86,9 +86,13 @@ T551CAP v1 sequence address data mask pc event openasr_commit mame_commit time
 
 Addresses are CPU program-space addresses, byte writes preserve their captured
 data/mask, and event types distinguish direct host-window reads/writes,
-read-select and each commit window, plus PADAT writes. Timestamps are MAME
-emulation time. This stream preserves ordering and should be treated as
-copyright-sensitive when it contains program bytes.
+read-select and each commit window, plus boot-ROM and FDC accesses. The active
+16-bit CPU-space tap reports aligned word bases on the low byte lane; metadata
+identifies this and the reconstruction tool maps direct-host addresses at a
+two-byte stride. PA4 is captured separately through an OpenASR MC68302 callback
+instrumentation build; it is not inferred from a `$FC6822` program-space tap.
+Timestamps are MAME emulation time. This stream preserves ordering and should
+be treated as copyright-sensitive when it contains program bytes.
 
 `tools/asr10_capture_reconstruct.py` reconstructs latched bytes and commit
 events in order. Six instruction latch writes at `$FC3003–$FC3008` form the
@@ -97,6 +101,15 @@ form a 24-bit value, also MSB-first. `$FC3181` commits an instruction selected
 by its data byte; `$FC3141` commits a GPR/special register; `$FC31C1` commits
 both. This is the host-port transaction format in OpenASR/MAME, not a claim
 about how effect files are serialized on disk.
+
+Trace row field `mame_commit` identifies the upstream MAME reference revision,
+not a claim that OpenASR's compiled ES5510 core is byte-identical to that
+revision. OpenASR's two execution-core source files differ and its disassembler
+files match; see `ASR10_ES5510_ARCHITECTURE.md` for file hashes and semantic
+deltas. The tap observes CPU program-space traffic before the host model
+handles it, so commit values remain direct observations of the emulated
+firmware's writes. Readback/model state and audio execution must be validated
+separately against upstream MAME before a core-conformance claim.
 
 OpenASR's prior V3.50 runtime report says record type 1 emitted paired GPR and
 instruction latch data through the `$E0` combined commit. That proves the

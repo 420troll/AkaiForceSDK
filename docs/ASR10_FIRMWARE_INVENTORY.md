@@ -38,8 +38,9 @@ The `.EDA` files begin with bytes `0D 0A 41 53 52 2D 31 30 20 44 69 73 6B`
 `tools/asr10_eda_to_img.py`, following the documented Giebler format and
 EpsLin Neo v1.58's independently available parser logic. Each reconstructed
 image is exactly 3,200 × 512 bytes and passes the ASR ID/OS/root-directory
-signature checks in `tools/asr10_disk_catalog.py`. They have not been booted
-in OpenASR.
+signature checks in `tools/asr10_disk_catalog.py`. OpenASR runtime attempts
+were made; neither run recorded accesses to the floppy-controller window, so
+successful OS boot is not established (see `ASR10_BOOT_ROM_RUNTIME_CHECK.md`).
 
 The two EDA files differ substantially: sizes are 168,449 and 275,457 bytes;
 the first differing byte is offset 137; 136,119 bytes differ within their
@@ -58,22 +59,35 @@ Private paths:
 `.gitignore` excludes `research_local/`; verify with `git check-ignore` before
 adding any research artifacts.
 
-## Boot ROM pair: expected fingerprints, not acquired
+## Boot ROM pair: acquired and hash-verified locally
 
 OpenASR's ROM README and pinned MAME driver specify two 131,072-byte images.
-Neither file is present locally, so no acquisition or fingerprint match is
-claimed.
+Both are present in the private PC backup and match the expected CRC-32,
+SHA-1, and size. The earlier “Missing” labels were stale inventory text and
+are superseded by the verified table below.
 
-| Chip/file | Expected CRC32 | Expected SHA-1 | Local status |
-|---|---|---|---|
-| lower `asr-648c-lo-1.5b.bin` | `8e437843` | `418f042acbc5323f5b59cbbd71fdc8b2d851f7d0` | Missing |
-| upper `asr-65e0-hi-1.5b.bin` | `b37cd3b6` | `c4371848428a628b5e5a50e99be602d7abfc7904` | Missing |
+The pair is present in a private local PC backup under
+`asr10/boot-roms/v1.5b/`. Both files match the expected size, CRC-32, and
+SHA-1; independent SHA-256 values are below. These checks verify identity
+against the OpenASR/MAME fingerprints, not ownership or redistribution rights.
+The originals are unmodified and are not in Git.
 
-MAME `esqasr.cpp` at commit
-`8be57cdc5f44ab830dff44c06dd39f24190742d4` declares these filenames,
-lengths, and fingerprints. OpenASR `roms/README.md` gives the same values.
-Best reproducible lawful source is a dump from owned chips checked against
-those references.
+| Chip/file | Bytes | CRC-32 | SHA-1 | SHA-256 | Local status |
+|---|---:|---|---|---|---|
+| `asr-648c-lo-1.5b.bin` | 131,072 | `8e437843` | `418f042acbc5323f5b59cbbd71fdc8b2d851f7d0` | `94312f142db5b307bf31fbcc9b46e54197460f691596465d24870aa579a892fc` | Verified |
+| `asr-65e0-hi-1.5b.bin` | 131,072 | `b37cd3b6` | `c4371848428a628b5e5a50e99be602d7abfc7904` | `d3f4863d74b44e85de69432e1618dc9b1df7dcdefe7c79f81af2b7990e0e16eb` | Verified |
+
+An interleaved diagnostic image was built privately with the high-byte ROM at
+even addresses and low-byte ROM at odd addresses. Its size is 262,144 bytes,
+SHA-256 `fe290ea4e52e7c9d229cc6e19529fdc6e5b33e74ddfcd54345660121a19cabbf`,
+and its raw bytes decode big-endian as SSP `0x00000300`, PC `0x0000000c`.
+Do not infer the MAME lane mapping from that offline concatenation. The pinned
+OpenASR driver declarations were retained unchanged for runtime validation;
+MAME CPU-space taps under those declarations returned reset vector words
+`0x0300` and `0x000C`. Reversing the ROM offsets in a temporary private test
+gave `0x0003` and `0x0C00`, so that experiment was reverted. The runtime result
+and the reason to prefer observed CPU reads over a naive byte-layout argument
+are recorded in `ASR10_BOOT_ROM_RUNTIME_CHECK.md`.
 
 ## OS images and effect media
 

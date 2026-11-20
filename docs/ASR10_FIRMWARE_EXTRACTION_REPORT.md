@@ -111,9 +111,10 @@ semantics and GPR/memory initialization are unresolved.
    delay-memory registers, and commits instructions to the ES5510.
 2. Confirm microcode end/trailer semantics against that loader, and compare
    candidate programs with MAME execution/readback.
-3. Obtain the still-missing lawful ASR boot ROM pair, boot the reconstructed
-   disks in pinned OpenASR, and record actual ES5510 transactions during effect
-   selection and parameter edits.
+3. Use the now locally available, fingerprint-verified ASR boot ROM pair to
+   boot the reconstructed disks in pinned OpenASR, then record actual ES5510
+   transactions during effect selection and parameter edits. Boot/runtime
+   status is tracked in `ASR10_BOOT_ROM_RUNTIME_CHECK.md`.
 4. Replay one complete program with captured init state through the standalone
    executor before claiming authentic execution.
 
