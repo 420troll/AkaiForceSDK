@@ -64,6 +64,10 @@ unverified and retains a selectable/under-investigation DOL rounding behavior.
 
 ## ASR-10 acquisition and loader handoffs
 
+- `ASR10_SYSEX_AND_SINGLE_EFFECT_CAPTURE.md`: separates likely SysEx effect
+  parameter access from unproven instruction-memory access; compares EpsLin
+  Neo against the private-safe catalog/extraction tools; documents the
+  single-effect image workflow and the new user-reported OS 3.53 GUI load.
 - `ASR10_FIRMWARE_INVENTORY.md`: acquired NE wrapper hashes, absent boot ROM
   fingerprints, missing OS image/effect media, archive-source status, and the
   V3.50 ASR-10/ASR-88 compatibility conflict.

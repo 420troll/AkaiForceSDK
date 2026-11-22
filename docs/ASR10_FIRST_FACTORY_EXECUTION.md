@@ -1,5 +1,16 @@
 # First ASR-10 factory ES5510 execution — status
 
+## New GUI report — 2026-11-22
+
+The user reports that the current OpenASR graphical emulator boots OS 3.53,
+opens the Effects directory, and loads an effect. This is a meaningful advance
+over the older headless run described below, but no GUI build identity, media
+hashes, or ES5510 host-transaction log were available in this research
+worktree. Therefore this is **user-reported runtime progress**, not yet a
+verified microprogram capture or authentic execution result. See
+[`ASR10_SYSEX_AND_SINGLE_EFFECT_CAPTURE.md`](ASR10_SYSEX_AND_SINGLE_EFFECT_CAPTURE.md)
+for the direct next steps.
+
 **Status: blocked before authentic replay.** As of 2026-11-20, this project
 has not executed an ASR-10 factory effect through the standalone ES5510 engine.
 The static EFE candidates are now cataloged more precisely, and one

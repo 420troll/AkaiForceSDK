@@ -1,5 +1,29 @@
 # Handoff — ASR-10 ES5510 factory-program capture
 
+## Runtime status update — 2026-11-22
+
+The user reports that the current OpenASR graphical emulator now boots ASR-10
+OS 3.53, reaches the Effects directory, and successfully loads an effect. This
+is newer than the 2026-11-20 headless attempt below, which saw no floppy I/O.
+The old report remains an accurate historical result for that build/run; it
+must not be treated as the current GUI result. This session did not have the
+3.53 media, effect file, GUI log, or transaction capture in the active ASR
+research checkout, so the new result is recorded as **user-reported, not
+independently reproduced**. It establishes a practical next capture window,
+not a recovered ES5510 program.
+
+New findings on external commands, EpsLin Neo, single-effect image creation,
+service-manual limits, and the next trace experiment are in
+[`ASR10_SYSEX_AND_SINGLE_EFFECT_CAPTURE.md`](ASR10_SYSEX_AND_SINGLE_EFFECT_CAPTURE.md).
+Most useful next step: attach the passive ES5510 host transaction recorder to
+the known-good OS 3.53 GUI run, load one effect from a one-EFE disk, then change
+one parameter and compare the commit stream. No production plugin or firmware
+was modified. EpsLin Neo v1.58 compiled natively in `/tmp`; its blank ASR
+image creation and synthetic one-effect insert were validated by both its
+directory listing and `tools/asr10_disk_catalog.py`. This establishes the
+controlled-media path at the filesystem layer only, not OpenASR mounting or
+authentic program execution.
+
 ## Runtime update — 2026-11-20
 
 The matching ASR-10 v1.5b boot ROMs were found in the private PC backup,
