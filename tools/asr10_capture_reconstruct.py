@@ -5,24 +5,30 @@ Outputs may contain copyrighted program bytes; paths inside the source tree are
 refused. A TAP log is an observation, not by itself a validated factory image.
 """
 from __future__ import annotations
-import argparse, json, re, sys
+import argparse, hashlib, json, re, sys
 from pathlib import Path
 
 ROW = re.compile(r"^T551CAP\tv1\t(\d+)\t([0-9A-Fa-f]{8})\t([0-9A-Fa-f]{8})\t([0-9A-Fa-f]{8})\t([0-9A-Fa-f]{8})\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)$")
+PA = re.compile(r"T551_PA data=([0-9A-Fa-f]{4}) run=(\d+) received=(\d+) loaded=(\d+)")
 MAX_WORDS = 160
 
 class TraceError(ValueError): pass
 
 def reconstruct(text: str) -> dict:
-    events=[]; metadata=[]
+    events=[]; metadata=[]; pa_events=[]
     for n,line in enumerate(text.splitlines(),1):
         if line.startswith("T551CAP_META\t"):
             metadata.append(line); continue
+        pm=PA.search(line)
+        if pm:
+            data,run,received,loaded=pm.groups()
+            pa_events.append({"trace_line":n,"data":int(data,16),"run":bool(int(run)),
+                              "received":bool(int(received)),"loaded":bool(int(loaded))})
         if not line.startswith("T551CAP\t"): continue
         m=ROW.fullmatch(line)
         if not m: raise TraceError(f"line {n}: malformed T551CAP row")
         seq,address,data,mask,pc,kind,openasr,mame,t=m.groups()
-        events.append({"seq":int(seq),"address":int(address,16),"data":int(data,16),
+        events.append({"seq":int(seq),"trace_line":n,"address":int(address,16),"data":int(data,16),
                        "mask":int(mask,16),"pc":int(pc,16),"kind":kind,
                        "openasr_commit":openasr,"mame_commit":mame,"time":t})
     if not events: raise TraceError("no T551CAP events found")
@@ -33,7 +39,8 @@ def reconstruct(text: str) -> dict:
         a,d=e["address"],e["data"]
         if e["kind"]=="padat_w":
             lifecycle.append({"seq":e["seq"],"event":"padat_write","data":d,
-                              "pa4_run_model":bool(d & 0x10),"pc":e["pc"]})
+                              "pa4_run_model":bool(d & 0x10),"pc":e["pc"],
+                              "trace_line":e["trace_line"]})
         if e["kind"]=="host_w" and 0x00FC3000 <= a <= 0x00FC303F:
             # MAME's 16-bit program-space tap reports the aligned word base.
             # The ASR host map is 8-bit on the active low lane, so consecutive
@@ -49,6 +56,7 @@ def reconstruct(text: str) -> dict:
         if e["kind"] not in ("gpr_commit_w","instr_commit_w","combined_commit_w"): continue
         idx=d & 0xff
         item={"seq":e["seq"],"selector":e["kind"],"index":idx,"pc":e["pc"]}
+        item["trace_line"]=e["trace_line"]
         if e["kind"] in ("gpr_commit_w","combined_commit_w"):
             g=(latches.get(0,0)<<16)|(latches.get(1,0)<<8)|latches.get(2,0)
             if idx < 256: regs[idx]=g
@@ -62,6 +70,10 @@ def reconstruct(text: str) -> dict:
     # First END index is a candidate boundary only; code may include conditional
     # or unreachable END words, so this cannot establish a program boundary alone.
     end_indices=[i for i,w in sorted(instructions.items()) if ((w>>12)&15)==15]
+    lifecycle.extend({"seq":x["trace_line"],"event":"pa4_callback","data":x["data"],
+                      "pa4_run_model":x["run"],"received":x["received"],
+                      "loaded":x["loaded"],"trace_line":x["trace_line"]} for x in pa_events)
+    lifecycle.sort(key=lambda x:x["trace_line"])
     halts=[x for x in lifecycle if not x["pa4_run_model"]]
     runs=[x for x in lifecycle if x["pa4_run_model"]]
     seqs=sorted(instructions)
@@ -72,26 +84,35 @@ def reconstruct(text: str) -> dict:
     # are deliberately not inferred from a tap file's own text.
     upload_events=[x for x in commits if x.get("selector") in ("gpr_commit_w","instr_commit_w","combined_commit_w")]
     lifecycle_ok=bool(halts and runs and upload_events
-      and any(h["seq"] < upload_events[0]["seq"] for h in halts)
-      and any(r["seq"] > upload_events[-1]["seq"] for r in runs))
+      and any(h["trace_line"] < upload_events[0]["trace_line"] for h in halts)
+      and any(r["trace_line"] > upload_events[-1]["trace_line"] for r in runs))
+    effect_load_evidence=any(x["loaded"] for x in pa_events)
     valid_meta=any("machine=asr10booth" in x and "OpenASR=" in x and "MAME=" in x for x in metadata)
     fixture=any("fixture=synthetic" in x for x in metadata)
-    validated=(valid_meta and not fixture and lifecycle_ok and contiguous and bool(end_indices)
+    validated=(valid_meta and not fixture and lifecycle_ok and effect_load_evidence and contiguous and bool(end_indices)
                and bool(regs) and "244" in special and "245" in special)
+    instruction_rows=[{"index":i,"word_hex":f"{w:012x}"} for i,w in sorted(instructions.items())]
+    gpr_rows=[{"register":i,"value_hex":f"{v:06x}"} for i,v in sorted(regs.items())]
+    instruction_sha=hashlib.sha256("".join(f"{x['index']:03d}:{x['word_hex']}\n" for x in instruction_rows).encode("ascii")).hexdigest()
+    gpr_sha=hashlib.sha256("".join(f"{x['register']:03d}:{x['value_hex']}\n" for x in gpr_rows).encode("ascii")).hexdigest()
+    final_sha=hashlib.sha256(json.dumps({"instructions":instruction_rows,"gprs":gpr_rows,
+      "special_registers":special},sort_keys=True,separators=(",",":")).encode("ascii")).hexdigest()
     return {"schema":"trollfx.asr10-es5510-host-capture.v1",
       "source_class":"synthetic_test_fixture" if fixture else ("openasr_cpu_program_space_firmware_write_observation" if valid_meta else "unattributed_trace"),
       "capture_status":"candidate_complete_needs_independent_review" if validated else "incomplete",
       "validated_factory_program":False,
       "metadata_lines":metadata,"event_count":len(events),"events":events,
-      "lifecycle":lifecycle,"commit_events":commits,
-      "instructions":[{"index":i,"word_hex":f"{w:012x}"} for i,w in sorted(instructions.items())],
-      "gprs":[{"register":i,"value_hex":f"{v:06x}"} for i,v in sorted(regs.items())],
+      "lifecycle":lifecycle,"pa4_callback_event_count":len(pa_events),"commit_events":commits,
+      "instructions":instruction_rows,"gprs":gpr_rows,
       "special_registers":special,"candidate_end_indices":end_indices,
+      "instruction_memory_sha256":instruction_sha,"gpr_state_sha256":gpr_sha,
+      "final_program_state_sha256":final_sha,
       "program_indices_contiguous_from_zero":contiguous,
       "halt_run_sequence_observed":lifecycle_ok,
+      "effect_load_evidence":effect_load_evidence,
       "limitations":["Tap evidence is CPU program-space traffic in OpenASR, not physical pin capture.",
         "For host_address_encoding=word_base_16bit_active_low_byte, direct host-port tap addresses are aligned word bases and map to byte registers at a two-byte stride.",
-        "PA4/RUN-HALT is an OpenASR MC68302 callback and is not represented by a memory-space tap at $FC6822/$FC6823.",
+        "PA4/RUN-HALT is captured from the OpenASR T551_PA callback diagnostic with -log -oslog; it is not inferred from fallback RAM at $FC6822/$FC6823.",
         "OpenASR's ES5510 execution core differs from the pinned upstream MAME reference; CPU writes do not establish core conformance.",
         "Program boundaries and completeness require independent validation against firmware selection and ES5510 behavior.",
         "This parser does not infer omitted writes, delay RAM contents, or firmware identity.",

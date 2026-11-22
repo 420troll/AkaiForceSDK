@@ -29,4 +29,33 @@ class CaptureTest(unittest.TestCase):
     def test_no_event_is_not_a_capture(self):
         with self.assertRaises(capture.TraceError): capture.reconstruct("# empty")
 
+    def test_pa_callback_is_ordered_and_separate_from_ram_writes(self):
+        lines=["T551CAP_META\t1\tsource_class=openasr\tOpenASR=binary_hash\tMAME=0.288",
+               "[:] T551_PA data=18E8 run=0 received=0 loaded=0",
+               row(1,0xFC3000,0), row(2,0xFC3002,0), row(3,0xFC3004,0),
+               row(4,0xFC3006,0), row(5,0xFC3008,0xF0), row(6,0xFC300A,0),
+               row(7,0xFC31C0,0,"combined_commit_w"),
+               "[:] T551_PA data=18FC run=1 received=1 loaded=1"]
+        got=capture.reconstruct("\n".join(lines))
+        self.assertEqual(got["pa4_callback_event_count"],2)
+        self.assertTrue(got["halt_run_sequence_observed"])
+        self.assertTrue(got["effect_load_evidence"])
+        self.assertEqual([x["event"] for x in got["lifecycle"]],
+                         ["pa4_callback","pa4_callback"])
+        self.assertEqual(len(got["instruction_memory_sha256"]),64)
+        self.assertEqual(len(got["gpr_state_sha256"]),64)
+        self.assertEqual(len(got["final_program_state_sha256"]),64)
+
+    def test_pa_run_without_loaded_flag_is_not_effect_load_evidence(self):
+        lines=["T551CAP_META\t1\tOpenASR=runtime\tMAME=0.288",
+               "T551_PA data=18E8 run=0 received=0 loaded=0",
+               row(1,0xFC3000,0), row(2,0xFC3002,0), row(3,0xFC3004,0),
+               row(4,0xFC3006,0), row(5,0xFC3008,0xF0), row(6,0xFC300A,0),
+               row(7,0xFC31C0,0,"combined_commit_w"),
+               "T551_PA data=18FC run=1 received=1 loaded=0"]
+        got=capture.reconstruct("\n".join(lines))
+        self.assertTrue(got["halt_run_sequence_observed"])
+        self.assertFalse(got["effect_load_evidence"])
+        self.assertFalse(got["validated_factory_program"])
+
 if __name__=="__main__": unittest.main()

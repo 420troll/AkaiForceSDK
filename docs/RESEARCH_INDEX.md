@@ -64,6 +64,9 @@ unverified and retains a selectable/under-investigation DOL rounding behavior.
 
 ## ASR-10 acquisition and loader handoffs
 
+- `ASR10_CAPTURE_SPRINT.md`: OS 3.53 OpenASR preflight, passive bus/PA
+  recorder validation, private launcher, user test steps, and strict replay
+  gate.
 - `ASR10_SYSEX_AND_SINGLE_EFFECT_CAPTURE.md`: separates likely SysEx effect
   parameter access from unproven instruction-memory access; compares EpsLin
   Neo against the private-safe catalog/extraction tools; documents the

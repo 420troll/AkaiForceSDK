@@ -2,6 +2,24 @@
 
 ## Runtime status update — 2026-11-22
 
+### Focused capture sprint — 2026-11-22
+
+The installed OpenASR GUI executable at `/home/gamer/OpenASR-run/mame` is
+MAME `0.288 (unknown)` and has the compiled `T551_PA` diagnostic. A preflight
+verified passive ES5510 host taps plus the PA4 callback stream using
+`-log -oslog`; ROM verification passed. The boot-only trace has not loaded
+44DDL+CHORUS and must not be replayed as an effect. A private capture launcher
+now makes an integrity-checked read-only OS 3.53 copy, isolates MAME config,
+records binary/media hashes and raw taps, extracts the reference effects
+privately, then reconstructs/disassembles the trace. Full details and the
+single user command are in [`ASR10_CAPTURE_SPRINT.md`](ASR10_CAPTURE_SPRINT.md).
+
+The only remaining dependency before reconstruction is one interactive GUI
+run: load `44DDL+CHORUS`, change one effect parameter, exit normally, then
+provide the printed private capture-directory path. No factory replay or DSP
+audio comparison is claimed before that trace passes the initialization and
+instruction-boundary checks.
+
 The user reports that the current OpenASR graphical emulator now boots ASR-10
 OS 3.53, reaches the Effects directory, and successfully loads an effect. This
 is newer than the 2026-11-20 headless attempt below, which saw no floppy I/O.

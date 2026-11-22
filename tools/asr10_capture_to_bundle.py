@@ -22,9 +22,13 @@ def main() -> int:
         print("ERROR: capture and bundle paths must both be outside the repository",file=sys.stderr); return 2
     try: c=json.loads(a.capture.read_text(encoding="utf-8"))
     except (OSError,json.JSONDecodeError) as e: print(f"ERROR: {e}",file=sys.stderr); return 2
+    source_class=c.get("source_class")
     if (not a.accept_candidate or c.get("schema")!="trollfx.asr10-es5510-host-capture.v1"
         or c.get("capture_status")!="candidate_complete_needs_independent_review"
-        or c.get("source_class")!="mame_runtime_firmware_write_observation"):
+        or source_class not in {
+            "mame_runtime_firmware_write_observation",
+            "openasr_cpu_program_space_firmware_write_observation",
+        }):
         print("ERROR: pass --accept-candidate and provide a recognized capture",file=sys.stderr); return 2
     ins=c.get("instructions",[]); regs=c.get("gprs",[])
     if not ins or len(ins)>160 or not c.get("candidate_end_indices"):
