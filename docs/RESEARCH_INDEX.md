@@ -41,6 +41,12 @@ from this repository.
 
 ## Emulator and implementation sources
 
+The 2026-11-23 recorder correction and its device-boundary evidence are
+catalogued in [`ASR10_CAPTURE_RECORDER_FIX.md`](ASR10_CAPTURE_RECORDER_FIX.md).
+It distinguishes CPU program-space taps from OpenASR's direct ES5510 host
+calls and specifies the post-BAR synthetic-write regression; it does not claim
+a factory program was recovered.
+
 | Project | Revision inspected | Finding | License/reuse status |
 |---|---|---|---|
 | [MAME ES5510 core](https://github.com/mamedev/mame/tree/8be57cdc5f44ab830dff44c06dd39f24190742d4/src/devices/cpu/es5510) | `8be57cdc5f44ab830dff44c06dd39f24190742d4` | Executable ES5510 model, internal instruction-field logger/decoder, host interface, 24-bit ALU/GPR model, 48-bit instruction/MAC path, delay/table addressing, serial pump | BSD-3-Clause in each source header and MAME license; `es5510d.cpp` disassembler entrypoint is a stub at this pin; no raw-file importer. Attribution/conditions required |

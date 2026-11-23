@@ -1,0 +1,2 @@
+# Unified diff files intentionally contain whitespace-bearing source context.
+tools/patches/*.patch whitespace=-blank-at-eol,-space-before-tab,-indent-with-non-tab

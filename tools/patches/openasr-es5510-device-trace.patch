@@ -1,0 +1,92 @@
+--- a/src/devices/cpu/es5510/es5510.cpp
++++ b/src/devices/cpu/es5510/es5510.cpp
+@@ -360 +360,7 @@
+-	//  printf("%06x: DSP read offset %04x (data is %04x)\n",pc(),offset,dsp_ram[offset]);
++	auto traced = [this, offset](uint8_t value) {
++		logerror("T551ESP\tR\t%.9f\t%02X\t%02X\n", machine().time().as_double(), unsigned(offset), unsigned(value));
++		return value;
++	};
++	// This trace is at the ES5510 host-device boundary and survives changes to
++	// the MC68302 program-space map. It records returned byte values, not the
++	// wider CPU bus data word.
+@@ -363,22 +369,22 @@
+-	case 0x00: LOG("ES5510: Host Read GPR latch[2]: %02x\n", (gpr_latch >> 16) & 0xff); return (gpr_latch >> 16) & 0xff;
+-	case 0x01: LOG("ES5510: Host Read GPR latch[1]: %02x\n", (gpr_latch >>  8) & 0xff); return (gpr_latch >>  8) & 0xff;
+-	case 0x02: LOG("ES5510: Host Read GPR latch[0]: %02x\n", (gpr_latch >>  0) & 0xff); return (gpr_latch >>  0) & 0xff;
+-
+-	case 0x03: LOG("ES5510: Host Read INSTR latch[5]: %02x\n", uint8_t((instr_latch >> 40) & 0xff)); return (instr_latch >> 40) & 0xff;
+-	case 0x04: LOG("ES5510: Host Read INSTR latch[4]: %02x\n", uint8_t((instr_latch >> 32) & 0xff)); return (instr_latch >> 32) & 0xff;
+-	case 0x05: LOG("ES5510: Host Read INSTR latch[3]: %02x\n", uint8_t((instr_latch >> 24) & 0xff)); return (instr_latch >> 24) & 0xff;
+-	case 0x06: LOG("ES5510: Host Read INSTR latch[2]: %02x\n", uint8_t((instr_latch >> 16) & 0xff)); return (instr_latch >> 16) & 0xff;
+-	case 0x07: LOG("ES5510: Host Read INSTR latch[1]: %02x\n", uint8_t((instr_latch >>  8) & 0xff)); return (instr_latch >>  8) & 0xff;
+-	case 0x08: LOG("ES5510: Host Read INSTR latch[0]: %02x\n", uint8_t((instr_latch >>  0) & 0xff)); return (instr_latch >>  0) & 0xff;
+-
+-	case 0x09: LOG("ES5510: Host Read DIL latch[2]: %02x\n", (dil_latch >> 16) & 0xff); return (dil_latch >> 16) & 0xff;
+-	case 0x0a: LOG("ES5510: Host Read DIL latch[1]: %02x\n", (dil_latch >>  8) & 0xff); return (dil_latch >>  8) & 0xff;
+-	case 0x0b: LOG("ES5510: Host Read DIL latch[0]: %02x\n", 0); return 0;
+-
+-	case 0x0c: LOG("ES5510: Host Read DOL latch[2]: %02x\n", (dol_latch >> 16) & 0xff); return (dol_latch >> 16) & 0xff;
+-	case 0x0d: LOG("ES5510: Host Read DOL latch[1]: %02x\n", (dol_latch >>  8) & 0xff); return (dol_latch >>  8) & 0xff;
+-	case 0x0e: LOG("ES5510: Host Read DOL latch[0]: %02x\n", 0xff); return 0xff;
+-
+-	case 0x0f: LOG("ES5510: Host Read DADR latch[2]: %02x\n", (dadr_latch >> 16) & 0xff); return (dadr_latch >> 16) & 0xff;
+-	case 0x10: LOG("ES5510: Host Read DADR latch[1]: %02x\n", (dadr_latch >>  8) & 0xff); return (dadr_latch >>  8) & 0xff;
+-	case 0x11: LOG("ES5510: Host Read DADR latch[0]: %02x\n", (dadr_latch >>  0) & 0xff); return (dadr_latch >>  0) & 0xff;
++	case 0x00: LOG("ES5510: Host Read GPR latch[2]: %02x\n", (gpr_latch >> 16) & 0xff); return traced((gpr_latch >> 16) & 0xff);
++	case 0x01: LOG("ES5510: Host Read GPR latch[1]: %02x\n", (gpr_latch >>  8) & 0xff); return traced((gpr_latch >>  8) & 0xff);
++	case 0x02: LOG("ES5510: Host Read GPR latch[0]: %02x\n", (gpr_latch >>  0) & 0xff); return traced((gpr_latch >>  0) & 0xff);
++
++	case 0x03: LOG("ES5510: Host Read INSTR latch[5]: %02x\n", uint8_t((instr_latch >> 40) & 0xff)); return traced((instr_latch >> 40) & 0xff);
++	case 0x04: LOG("ES5510: Host Read INSTR latch[4]: %02x\n", uint8_t((instr_latch >> 32) & 0xff)); return traced((instr_latch >> 32) & 0xff);
++	case 0x05: LOG("ES5510: Host Read INSTR latch[3]: %02x\n", uint8_t((instr_latch >> 24) & 0xff)); return traced((instr_latch >> 24) & 0xff);
++	case 0x06: LOG("ES5510: Host Read INSTR latch[2]: %02x\n", uint8_t((instr_latch >> 16) & 0xff)); return traced((instr_latch >> 16) & 0xff);
++	case 0x07: LOG("ES5510: Host Read INSTR latch[1]: %02x\n", uint8_t((instr_latch >>  8) & 0xff)); return traced((instr_latch >>  8) & 0xff);
++	case 0x08: LOG("ES5510: Host Read INSTR latch[0]: %02x\n", uint8_t((instr_latch >>  0) & 0xff)); return traced((instr_latch >>  0) & 0xff);
++
++	case 0x09: LOG("ES5510: Host Read DIL latch[2]: %02x\n", (dil_latch >> 16) & 0xff); return traced((dil_latch >> 16) & 0xff);
++	case 0x0a: LOG("ES5510: Host Read DIL latch[1]: %02x\n", (dil_latch >>  8) & 0xff); return traced((dil_latch >>  8) & 0xff);
++	case 0x0b: LOG("ES5510: Host Read DIL latch[0]: %02x\n", 0); return traced(0);
++
++	case 0x0c: LOG("ES5510: Host Read DOL latch[2]: %02x\n", (dol_latch >> 16) & 0xff); return traced((dol_latch >> 16) & 0xff);
++	case 0x0d: LOG("ES5510: Host Read DOL latch[1]: %02x\n", (dol_latch >>  8) & 0xff); return traced((dol_latch >>  8) & 0xff);
++	case 0x0e: LOG("ES5510: Host Read DOL latch[0]: %02x\n", 0xff); return traced(0xff);
++
++	case 0x0f: LOG("ES5510: Host Read DADR latch[2]: %02x\n", (dadr_latch >> 16) & 0xff); return traced((dadr_latch >> 16) & 0xff);
++	case 0x10: LOG("ES5510: Host Read DADR latch[1]: %02x\n", (dadr_latch >>  8) & 0xff); return traced((dadr_latch >>  8) & 0xff);
++	case 0x11: LOG("ES5510: Host Read DADR latch[0]: %02x\n", (dadr_latch >>  0) & 0xff); return traced((dadr_latch >>  0) & 0xff);
+@@ -386 +392 @@
+-	case 0x12: LOG("ES5510: Host Reading Host Control\n"); return 0; // Host Control
++	case 0x12: LOG("ES5510: Host Reading Host Control\n"); return traced(0); // Host Control
+@@ -388 +394 @@
+-	case 0x16: return 0x27; // Program Counter, for test purposes only
++	case 0x16: return traced(0x27); // Program Counter, for test purposes only
+@@ -392 +398 @@
+-	return 0x00;
++	return traced(0x00);
+@@ -396,0 +403,3 @@
++	// Observe writes where the device consumes them; CPU program-space taps can
++	// miss writes made through the MC68302 driver's direct host interface.
++	logerror("T551ESP\tW\t%.9f\t%02X\t%02X\n", machine().time().as_double(), unsigned(offset), unsigned(data));
+@@ -445 +454,3 @@
+-			dram_w(dadr_latch, clamp_to_s16(dol_latch));
++			const int16_t ram_value = clamp_to_s16(dol_latch);
++			logerror("T551ESP\tHOST_DRAM_W\t%.9f\t%06X\t%04X\n", machine().time().as_double(), unsigned(dadr_latch), unsigned(uint16_t(ram_value)));
++			dram_w(dadr_latch, ram_value);
+@@ -459,0 +471 @@
++				logerror("T551ESP\tHOST_DRAM_CLEAR\t%.9f\n", machine().time().as_double());
+@@ -508,0 +521 @@
++		logerror("T551ESP\tGPR_COMMIT\t%.9f\t%02X\t%06X\n", machine().time().as_double(), unsigned(data), unsigned(gpr_latch & 0xffffff));
+@@ -518,0 +532 @@
++			logerror("T551ESP\tINSTR_COMMIT\t%.9f\t%02X\t%012llX\n", machine().time().as_double(), unsigned(data), (unsigned long long)(instr_latch & 0xffffffffffffULL));
+@@ -528,0 +543 @@
++			logerror("T551ESP\tCOMBINED_COMMIT\t%.9f\t%02X\t%012llX\t%06X\n", machine().time().as_double(), unsigned(data), (unsigned long long)(instr_latch & 0xffffffffffffULL), unsigned(gpr_latch & 0xffffff));
+@@ -529,0 +545 @@
++		logerror("T551ESP\tGPR_COMMIT\t%.9f\t%02X\t%06X\n", machine().time().as_double(), unsigned(data), unsigned(gpr_latch & 0xffffff));
+--- a/src/mame/ensoniq/asr10_boot.cpp
++++ b/src/mame/ensoniq/asr10_boot.cpp
+@@ -677,0 +678 @@
++	logerror("T551ESP\tPA4\t%.9f\t%04X\t%u\t%u\t%u\n", machine().time().as_double(), unsigned(data), unsigned(run), unsigned(m_esp_program_received), unsigned(m_esp_program_loaded));
+--- a/src/devices/machine/mc68302.cpp
++++ b/src/devices/machine/mc68302.cpp
+@@ -302,0 +303 @@
++	logerror("T551MAP\t%.9f\tBAR=%04X\tBASE=%06X\tEND=%06X\n", machine().time().as_double(), unsigned(m_bar), unsigned(m_window_base), unsigned(m_window_base + 0x0fff));

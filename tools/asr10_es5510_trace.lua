@@ -66,6 +66,8 @@ install_read(0x00fc4000, 0x00fc4003, "fdc_r")
 -- do not treat a write to fallback RAM at $FC6822 as a PA4 transition.
 
 local last_progress = -1
+local synthetic_at = tonumber(os.getenv("T551_TEST_SYNTHETIC_SEC") or "")
+local synthetic_written = false
 emu.register_periodic(function()
   local now = emu.time()
   if now >= last_progress + 1 then
@@ -73,17 +75,24 @@ emu.register_periodic(function()
     print(string.format("T551CAP_PROGRESS\tsec=%.0f\tpc=%08X\tcycles=%s",
       now, pc_value() & 0xffffffff, tostring(cpu.state["CURCYC"] or cpu.state["CYCLES"] or "unavailable")))
   end
+  -- Regression-only post-BAR write. Never enabled by the normal launcher.
+  -- The marker makes this transaction unambiguously synthetic in test logs.
+  if synthetic_at and not synthetic_written and now >= synthetic_at then
+    synthetic_written = true
+    print(string.format("T551CAP_TEST_SYNTHETIC_BEGIN\tsec=%.9f\taddress=00FC3030\tvalue=005A", now))
+    program:write_u16(0x00fc3030, 0x005a)
+    print(string.format("T551CAP_TEST_SYNTHETIC_END\tsec=%.9f", emu.time()))
+  end
 end)
 
 local source_meta
 if os.getenv("T551_ES5510_SOURCE_ID") then
-  source_meta = "es5510_core_source=" .. os.getenv("T551_ES5510_SOURCE_ID") ..
-    "\tes5510_source_file_hashes=unavailable_for_installed_binary"
+  source_meta = "es5510_core_source=" .. os.getenv("T551_ES5510_SOURCE_ID")
 else
   source_meta = "es5510_core_source=openasr_modified\tes5510_cpp_sha256=" .. es5510_cpp ..
     "\tes5510_h_sha256=" .. es5510_h .. "\tes5510d_cpp_sha256=" .. es5510d_cpp ..
     "\tes5510d_h_sha256=" .. es5510d_h
 end
 print("T551CAP_META\t1\tsource_class=openasr_mame_cpu_runtime_firmware_write_observation\tOpenASR=" .. openasr .. "\tMAME=" .. mame ..
-  "\tmachine=asr10booth\tobservation=passive_cpu_program_space_taps\thost_address_encoding=word_base_16bit_active_low_byte\tpa4=separate_model_callback_log\trom_identity=see_separate_run_manifest\t" ..
+	"\tmachine=asr10booth\tobservation=cpu_program_space_taps_plus_es5510_device_boundary\thost_address_encoding=word_base_16bit_active_low_byte\tpa4=T551ESP_device_boundary\trom_identity=see_separate_run_manifest\t" ..
   source_meta)

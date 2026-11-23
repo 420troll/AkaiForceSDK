@@ -39,7 +39,8 @@ class CaptureTest(unittest.TestCase):
         got=capture.reconstruct("\n".join(lines))
         self.assertEqual(got["pa4_callback_event_count"],2)
         self.assertTrue(got["halt_run_sequence_observed"])
-        self.assertTrue(got["effect_load_evidence"])
+        self.assertFalse(got["effect_load_evidence"])
+        self.assertEqual(got["capture_status"],"incomplete")
         self.assertEqual([x["event"] for x in got["lifecycle"]],
                          ["pa4_callback","pa4_callback"])
         self.assertEqual(len(got["instruction_memory_sha256"]),64)

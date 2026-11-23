@@ -15,10 +15,18 @@ MAX_WORDS = 160
 class TraceError(ValueError): pass
 
 def reconstruct(text: str) -> dict:
-    events=[]; metadata=[]; pa_events=[]
+    events=[]; metadata=[]; pa_events=[]; synthetic_seqs=set(); synthetic_active=False
     for n,line in enumerate(text.splitlines(),1):
         if line.startswith("T551CAP_META\t"):
             metadata.append(line); continue
+        if line.startswith("T551CAP_TEST_SYNTHETIC_BEGIN\t"):
+            synthetic_active=True; continue
+        if line.startswith("T551CAP_TEST_SYNTHETIC_END\t"):
+            synthetic_active=False; continue
+        if line.startswith("T551CAP_SYNTHETIC\t"):
+            try: synthetic_seqs.add(int(line.split("\t",1)[1]))
+            except ValueError: raise TraceError(f"line {n}: malformed synthetic event marker")
+            continue
         pm=PA.search(line)
         if pm:
             data,run,received,loaded=pm.groups()
@@ -28,9 +36,11 @@ def reconstruct(text: str) -> dict:
         m=ROW.fullmatch(line)
         if not m: raise TraceError(f"line {n}: malformed T551CAP row")
         seq,address,data,mask,pc,kind,openasr,mame,t=m.groups()
-        events.append({"seq":int(seq),"trace_line":n,"address":int(address,16),"data":int(data,16),
+        event_seq=int(seq)
+        events.append({"seq":event_seq,"trace_line":n,"address":int(address,16),"data":int(data,16),
                        "mask":int(mask,16),"pc":int(pc,16),"kind":kind,
-                       "openasr_commit":openasr,"mame_commit":mame,"time":t})
+                       "openasr_commit":openasr,"mame_commit":mame,"time":t,
+                       "synthetic_test_event":synthetic_active or event_seq in synthetic_seqs})
     if not events: raise TraceError("no T551CAP events found")
     events.sort(key=lambda e:e["seq"])
     if len({e["seq"] for e in events}) != len(events): raise TraceError("duplicate sequence number")
@@ -86,9 +96,12 @@ def reconstruct(text: str) -> dict:
     lifecycle_ok=bool(halts and runs and upload_events
       and any(h["trace_line"] < upload_events[0]["trace_line"] for h in halts)
       and any(r["trace_line"] > upload_events[-1]["trace_line"] for r in runs))
-    effect_load_evidence=any(x["loaded"] for x in pa_events)
+    effect_load_evidence=bool(not any(e["synthetic_test_event"] for e in events)
+      and lifecycle_ok and contiguous and bool(end_indices) and bool(regs)
+      and "244" in special and "245" in special and any(x["loaded"] for x in pa_events))
     valid_meta=any("machine=asr10booth" in x and "OpenASR=" in x and "MAME=" in x for x in metadata)
     fixture=any("fixture=synthetic" in x for x in metadata)
+    device_meta=any("observation=es5510_device_boundary" in x for x in metadata)
     validated=(valid_meta and not fixture and lifecycle_ok and effect_load_evidence and contiguous and bool(end_indices)
                and bool(regs) and "244" in special and "245" in special)
     instruction_rows=[{"index":i,"word_hex":f"{w:012x}"} for i,w in sorted(instructions.items())]
@@ -98,7 +111,7 @@ def reconstruct(text: str) -> dict:
     final_sha=hashlib.sha256(json.dumps({"instructions":instruction_rows,"gprs":gpr_rows,
       "special_registers":special},sort_keys=True,separators=(",",":")).encode("ascii")).hexdigest()
     return {"schema":"trollfx.asr10-es5510-host-capture.v1",
-      "source_class":"synthetic_test_fixture" if fixture else ("openasr_cpu_program_space_firmware_write_observation" if valid_meta else "unattributed_trace"),
+      "source_class":"synthetic_test_fixture" if fixture or any(e["synthetic_test_event"] for e in events) else (("openasr_es5510_device_boundary_observation" if device_meta else "openasr_cpu_program_space_firmware_write_observation") if valid_meta else "unattributed_trace"),
       "capture_status":"candidate_complete_needs_independent_review" if validated else "incomplete",
       "validated_factory_program":False,
       "metadata_lines":metadata,"event_count":len(events),"events":events,

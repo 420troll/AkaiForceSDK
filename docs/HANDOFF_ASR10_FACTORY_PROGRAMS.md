@@ -207,3 +207,37 @@ No Force plugin code, package, UID, installation, or existing project was
 modified. No proprietary media or program payload is tracked. The existing
 TROLLfx 5510 remains at UID `T551`, with its original TROLLfx diagnostic delay
 and chorus programs and fixed A → B → C → D routing.
+
+## 2026-11-23 — recorder visibility repair
+
+The old GUI capture's 158 CPU-space tap records ended at 0.0014885 emulated
+seconds, even though its PA4 callback diagnostics continued through the long
+session. Source inspection at OpenASR commit
+`241f9331477b07b072330ca6ebd2d7a2e2cc832e` established why: the ASR-10
+machine's fixed ES5510 select/commit helper routines invoke
+`es5510_device::host_w()` directly. Those transactions bypass the MC68302
+program-space taps. This is the demonstrated root cause for missing commit
+traffic. The BAR remap installs its internal window at `$FC6000`; it does not
+overlap the static `$FC3000` ES5510 map. Whether dynamic handler installation
+invalidates existing Lua taps remains a separate runtime check, not an assumed
+fact.
+
+Added a pinned, passive OpenASR patch at
+`tools/patches/openasr-es5510-device-trace.patch`. It logs ES5510 byte reads
+and writes, semantic instruction/GPR/combined commits, delay-RAM writes/clear,
+PA4 lifecycle, and MC68302 BAR window installation. The old `0x101`-step CPU
+values are wider 16-bit tap words with duplicated low-lane bytes; the device
+boundary should establish the actual byte value.
+
+`tools/asr10_openasr_trace_normalize.py` consumes direct device records,
+preserves event ordering and synthetic markers, and emits a private audit.
+The launcher cross-checks semantic commit values against reconstructed latch
+state and disqualifies any mismatch. A marked `$FC3030=$5A` post-remap test is
+available through `T551_TEST_SYNTHETIC_SEC`; normal sessions do not inject it.
+The old capture cannot be reconstructed because it never logged the missing
+device-boundary transfers. It remains useful as boot/remap context only.
+
+Validation and runtime regression results for the new OpenASR build are
+recorded in `docs/ASR10_CAPTURE_RECORDER_FIX.md` once the instrumented build
+and post-remap run complete. No proprietary trace or firmware is tracked, and
+no Force plugin was changed.
