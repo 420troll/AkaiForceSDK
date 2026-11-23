@@ -1,0 +1,14 @@
+{
+  "kit": "cyan",
+  "pages": [
+    {"name":"5510", "controls":[
+      {"param":"Unit A Algorithm","widget":"slider","overlay":"menu"},
+      {"param":"Unit A Time","widget":"knob"},
+      {"param":"Unit A Feedback","widget":"knob"},
+      {"param":"Unit A Wet","widget":"knob"},
+      {"param":"Unit A Rate","widget":"knob"},
+      {"param":"Unit A Depth","widget":"knob"},
+      {"param":"Unit A Bypass","widget":"switch"}
+    ]}
+  ]
+}
