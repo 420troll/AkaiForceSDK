@@ -76,3 +76,10 @@ unverified and retains a selectable/under-investigation DOL rounding behavior.
 | Original Ensoniq algorithms have been recovered here | False | No proprietary algorithm image or verified microcode reconstruction exists in this repository |
 | A useful Ensoniq-inspired Force effect requires instruction-level emulation | Hypothesis rejected as a project dependency | Native DSP can reproduce documented behaviors efficiently; emulation remains valuable for research/validation |
 
+## TeleBrain parameter reference
+
+| Item | Result | Evidence/status |
+|---|---|---|
+| [Milestone 2 catalog report](TELEBRAIN_CATALOG_MILESTONE_2.md) | Normalized local schema, search instructions, SysEx comparison, anomalies, and Q-Link proposals | Original 52-table/1,137-row catalog remains private; only tooling and synthetic test fixtures are committed |
+| [Redacted algorithm/table inventory](TELEBRAIN_ALGORITHM_INVENTORY_REDACTED.md) | Table-number lookup convention, schema reuse groups, table 54 conflict | `read $1.csv` verified in the user-supplied Max patch; algorithm labels and DP/4/DP/4+ equivalence are individually qualified |
+

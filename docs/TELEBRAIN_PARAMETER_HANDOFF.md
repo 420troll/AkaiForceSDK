@@ -1,5 +1,21 @@
 # TeleBrain parameter-catalog handoff — DP/4 DSP and Force UI
 
+> Milestone 2 normalization/search tooling and evidence update: see
+> [`TELEBRAIN_CATALOG_MILESTONE_2.md`](TELEBRAIN_CATALOG_MILESTONE_2.md) and
+> [`TELEBRAIN_ALGORITHM_INVENTORY_REDACTED.md`](TELEBRAIN_ALGORITHM_INVENTORY_REDACTED.md).
+
+## Milestone 2 status
+
+The private extracted catalog is normalized by `tools/normalize_telebrain.py`
+into a searchable local-only schema with explicit display-number/internal-offset
+fields and raw/display ranges. The Max patch's four unit cores use an algorithm
+value to load a same-numbered CSV filename. This confirms the file-selection
+convention, while table 54's own header is inconsistent with that convention.
+The table-level details, schema reuse, SysEx comparison scope, proposed
+algorithm-family Q-Link groups and unresolved data issues are documented in
+the two linked Milestone 2 reports. Synthetic validation tests pass; generated
+catalog output and original tables remain outside Git.
+
 **Source inspected:** User-provided archive `Ariè - DP4 TeleBrain.zip` containing a Max for Live `.amxd`, `patchScripter3.3.js`, and 52 numbered CSV parameter tables. The separate Windows-external archive only contains binary Max external modules.
 
 **Scope:** research and original DSP/skin implementation; no MIDI hardware debugging or protocol flood testing.
