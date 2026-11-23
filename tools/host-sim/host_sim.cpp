@@ -170,6 +170,9 @@ struct Host
     double sampleRate = 44100.0;
     int blockSize = 128;
     double samplePos = 0.0;
+    double bpm = 120.0;
+    double bpmChangeAtSeconds = -1.0;
+    double bpmAfterChange = 120.0;
     bool playing = false;
     bool verbose = false;
     VstInt32 uid = 0;
@@ -195,7 +198,8 @@ static void vlog(const char* fmt, ...)
 
 static void fillTimeInfo()
 {
-    const double tempo = 120.0;
+    const double tempo = g.bpmChangeAtSeconds >= 0.0 && g.samplePos / g.sampleRate >= g.bpmChangeAtSeconds
+        ? g.bpmAfterChange : g.bpm;
     VstTimeInfo& t = g.time;
     std::memset(&t, 0, sizeof(t));
     t.samplePos = g.samplePos;
@@ -1077,6 +1081,8 @@ struct TestOptions
 {
     double seconds = 2.0;
     double sr = 44100.0;
+    double bpm = 120.0, bpmChangeAtSeconds = -1.0, bpmAfterChange = 120.0;
+    std::vector<std::pair<int, float>> parameterOverrides;
     int block = 128;
     std::string wav;
     std::vector<int> notes{60};
@@ -1091,6 +1097,9 @@ static int runTest(const std::string& path, const TestOptions& opt)
     g.playing = opt.playing;
     g.sampleRate = opt.sr;
     g.blockSize = opt.block;
+    g.bpm = opt.bpm;
+    g.bpmChangeAtSeconds = opt.bpmChangeAtSeconds;
+    g.bpmAfterChange = opt.bpmAfterChange;
 
     std::printf("host_sim: testing %s\n", path.c_str());
     std::printf("          %.2f s at %g Hz, process block %d frames, notes", opt.seconds, opt.sr, opt.block);
@@ -1139,6 +1148,14 @@ static int runTest(const std::string& path, const TestOptions& opt)
     std::vector<int16_t> wavData;
     if (!opt.wav.empty()) r.wav = &wavData;
 
+    // Optional normalized host-parameter overrides apply only to the main pass.
+    for (const auto& override : opt.parameterOverrides)
+    {
+        if (override.first < 0 || override.first >= numParams)
+            rep.fail("parameter override index %d outside 0..%d", override.first, numParams - 1);
+        else setParam(e, override.first, override.second);
+    }
+
     // ---- main render --------------------------------------------------------
     rep.section("Render");
     const bool instrument = p.isSynth;
@@ -1146,6 +1163,10 @@ static int runTest(const std::string& path, const TestOptions& opt)
     if (instrument) mainEvents = noteEvents(opt.notes, 0.1, opt.seconds * 0.6);
     PassResult main = r.run("render (main pass)", opt.seconds, opt.block, mainEvents, !instrument, false, true, nullptr);
     rep.info("main pass: %ld blocks, peak %.2f dBFS, rms %.2f dBFS", main.blocks, toDb(main.all.peak), toDb(main.all.rms()));
+    rep.info("host tempo began at %.2f BPM%s", opt.bpm, opt.bpmChangeAtSeconds >= 0.0 ? " with a scheduled tempo change" : "");
+    for (size_t i = 0; i < p.paramNames.size(); ++i)
+        if (p.paramNames[i] == "Sync Range")
+            rep.info("main-pass sync range: %s", getParam(e, (int)i) >= 0.5f ? "out of range (dry safety path)" : "ready");
     checkAudio(rep, "main pass", main.all);
     if (instrument)
     {
@@ -1394,6 +1415,9 @@ static void usage()
         "      --wav out.wav   write the main pass as 16-bit stereo WAV\n"
         "      --notes a,b,c   MIDI notes to play for instruments (default 60)\n"
         "      --playing       report the transport as playing\n"
+        "      --bpm N         host tempo for audioMasterGetTime (default 120)\n"
+        "      --bpm-change-after SEC --bpm-after N  change host tempo during rendering\n"
+        "      --param INDEX=NORM  set a normalized parameter for the main render (repeatable)\n"
         "      --seed N        seed for the random parameter tests (default 1234)\n"
         "      --verbose       log every opcode in both directions\n\n"
         "Exit code: 0 pass, 1 failures (or bad arguments), 2 the plugin crashed.\n");
@@ -1425,6 +1449,19 @@ int main(int argc, char** argv)
         else if (a == "--sr") opt.sr = std::atof(next("--sr"));
         else if (a == "--block") opt.block = std::atoi(next("--block"));
         else if (a == "--wav") opt.wav = next("--wav");
+        else if (a == "--bpm") opt.bpm = std::atof(next("--bpm"));
+        else if (a == "--bpm-change-after") opt.bpmChangeAtSeconds = std::atof(next("--bpm-change-after"));
+        else if (a == "--bpm-after") opt.bpmAfterChange = std::atof(next("--bpm-after"));
+        else if (a == "--param")
+        {
+            std::string spec = next("--param");
+            size_t eq = spec.find('=');
+            if (eq == std::string::npos) { std::fprintf(stderr, "host_sim: --param expects INDEX=NORMALIZED\n"); return 1; }
+            int index = std::atoi(spec.substr(0, eq).c_str());
+            float value = std::strtof(spec.substr(eq + 1).c_str(), nullptr);
+            if (index < 0 || !std::isfinite(value) || value < 0.0f || value > 1.0f) { std::fprintf(stderr, "host_sim: invalid --param value\n"); return 1; }
+            opt.parameterOverrides.emplace_back(index, value);
+        }
         else if (a == "--seed") opt.seed = (unsigned)std::strtoul(next("--seed"), nullptr, 10);
         else if (a == "--notes")
         {
@@ -1445,9 +1482,11 @@ int main(int argc, char** argv)
         else if (a == "--playing") opt.playing = true;
         else { std::fprintf(stderr, "host_sim: unknown option %s\n", a.c_str()); usage(); return 1; }
     }
-    if (opt.seconds <= 0.05 || opt.sr < 8000 || opt.block < 1 || opt.block > 4096)
+    if (opt.seconds <= 0.05 || opt.sr < 8000 || opt.block < 1 || opt.block > 4096 ||
+        !std::isfinite(opt.bpm) || opt.bpm <= 0.0 || opt.bpmAfterChange <= 0.0 ||
+        (opt.bpmChangeAtSeconds >= 0.0 && opt.bpmChangeAtSeconds >= opt.seconds))
     {
-        std::fprintf(stderr, "host_sim: --seconds must be > 0.05, --sr >= 8000, --block 1..4096\n");
+        std::fprintf(stderr, "host_sim: invalid duration, sample rate, block size, or tempo schedule\n");
         return 1;
     }
     return runTest(path, opt);

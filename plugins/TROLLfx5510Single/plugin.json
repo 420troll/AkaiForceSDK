@@ -1,7 +1,7 @@
 {
   "name": "5510 Single",
   "manufacturer": "TROLLfx",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "format": "vst2",
   "kind": "effect",
   "uid": "T55S",
@@ -10,6 +10,6 @@
   "category": "Effect",
   "file32": "VST/5510-single-arm32.so",
   "file64": "VST/5510-single-arm64.so",
-  "description": "Single-unit ES5510 TROLLfx diagnostic delay and chorus hardware evaluation plugin.",
+  "description": "Single-unit ES5510 Delay and Chorus with host-tempo synchronization.",
   "license": "BSD-3-Clause"
 }

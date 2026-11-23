@@ -1,14 +1,27 @@
 {
-  "kit": "cyan",
+  "kit": "amber",
+  "style": {"background":"ff111315","accent":"ffffa12b","text":"fff4f1e8","muted":"ff9b988f"},
   "pages": [
-    {"name":"5510", "controls":[
+    {"name":"DELAY", "controls":[
       {"param":"Unit A Algorithm","widget":"slider","overlay":"menu"},
-      {"param":"Unit A Time","widget":"knob"},
-      {"param":"Unit A Feedback","widget":"knob"},
-      {"param":"Unit A Wet","widget":"knob"},
-      {"param":"Unit A Rate","widget":"knob"},
-      {"param":"Unit A Depth","widget":"knob"},
-      {"param":"Unit A Bypass","widget":"switch"}
+      {"param":"Unit A Time","widget":"knob","visibleWhen":{"param":"Unit A Algorithm","choice":"TROLLfx Delay"}},
+      {"param":"Unit A Feedback","widget":"knob","visibleWhen":{"param":"Unit A Algorithm","choice":"TROLLfx Delay"},"polarity":"bipolar"},
+      {"param":"Unit A Wet","widget":"knob","visibleWhen":{"param":"Unit A Algorithm","choice":"TROLLfx Delay"}},
+      {"param":"Tempo Sync","widget":"switch","visibleWhen":{"param":"Unit A Algorithm","choice":"TROLLfx Delay"}},
+      {"param":"Beat Division","widget":"slider","overlay":"menu","visibleWhen":{"param":"Tempo Sync","choice":"On"}},
+      {"param":"Fallback BPM","widget":"knob","visibleWhen":{"param":"Tempo Sync","choice":"On"}},
+      {"param":"Fine Offset","widget":"knob","visibleWhen":{"param":"Tempo Sync","choice":"On"},"polarity":"bipolar"},
+      {"param":"Unit A Bypass","widget":"switch","visibleWhen":{"param":"Unit A Algorithm","choice":"TROLLfx Delay"}},
+      {"param":"Sync Range","widget":"slider","overlay":"menu","visibleWhen":{"param":"Tempo Sync","choice":"On"}}
+    ]},
+    {"name":"CHORUS", "controls":[
+      {"param":"Unit A Algorithm","widget":"slider","overlay":"menu"},
+      {"param":"Unit A Rate","widget":"knob","visibleWhen":{"param":"Unit A Algorithm","choice":"TROLLfx Chorus"}},
+      {"param":"Unit A Depth","widget":"knob","visibleWhen":{"param":"Unit A Algorithm","choice":"TROLLfx Chorus"}},
+      {"param":"Unit A Wet","widget":"knob","visibleWhen":{"param":"Unit A Algorithm","choice":"TROLLfx Chorus"}},
+      {"param":"Stereo Spread","widget":"knob","visibleWhen":{"param":"Unit A Algorithm","choice":"TROLLfx Chorus"}},
+      {"param":"Unit A Time","widget":"knob","visibleWhen":{"param":"Unit A Algorithm","choice":"TROLLfx Chorus"}},
+      {"param":"Unit A Bypass","widget":"switch","visibleWhen":{"param":"Unit A Algorithm","choice":"TROLLfx Chorus"}}
     ]}
   ]
 }
