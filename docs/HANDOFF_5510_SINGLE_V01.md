@@ -40,20 +40,32 @@ Results:
 - Average native desktop processing cost: 1.83% of a 64-frame block; worst measured block 8.10%. This is not a Force CPU measurement.
 - No hardware load, Force discovery, or audition has been performed.
 
-## Force installation (not yet executed)
+## Force installation (completed; load/audition pending)
 
-The target `/media/SSD250g/VST2 Plugins/` was unreachable during this session: both WSL SSH and Windows TCP checks failed to reach `192.168.50.47:22` (`No route to host` / `TcpTestSucceeded=False`). Consequently the Force architecture, free space, existing paths, host process state, and target-folder absence could not be confirmed remotely. No files on the Force were changed.
+- SSH alias `akai-force` resolved to `192.168.50.47`; Force `wlan0` confirmed `192.168.50.47/24`.
+- Force identity: hostname `force`, `armv7l`, kernel `6.18.44-az01-2026-08-10-rt6`.
+- `/media/SSD250g`: 223.6 GB total, 47.7 GB used, 175.9 GB available.
+- The destination folder was confirmed absent before installation. It now exists at `/media/SSD250g/VST2 Plugins/TROLLfx - VST - 5510 Single/`.
+- The downloaded ZIP hash was verified on the Force before extraction. The ARMv7 binary hash after installation is `f47034935ba1f039820f9215f95654c4361b4af032fd4ba2b8f3de5865c63772`, matching the local release.
+- Binary mode is `-rwxr-xr-x`; metadata UID is `T55S`. The temporary extraction directory and transferred `/tmp/5510-single-0.1.0-mpc.zip` were removed after verification.
+- The original VST2 directory contained the existing TROLLfx and RTA folders; none was modified or replaced.
+- SSD mount options include `noexec`. No mount changes were made.
+- MPC process PID 328 remained running. The new `.so` was not present in `/proc/328/maps` at verification time. Therefore installation is verified, but host discovery, plugin loading, and audio audition are **not** verified. No restart or scan action was triggered.
 
-After restoring the existing `akai-force` SSH route, first recheck architecture, storage, plugin folders, and active MPC/plugin processes. Transfer the package to `/tmp` on the Force, then install only if the exact destination does not exist:
+Commands used from the development computer:
 
 ```sh
 scp plugins/TROLLfx5510Single/dist/5510-single-0.1.0-mpc.zip akai-force:/tmp/5510-single-0.1.0-mpc.zip
-ssh akai-force 'set -eu; test "$(uname -m)" = armv7l; df -h /media/SSD250g; target="/media/SSD250g/VST2 Plugins/TROLLfx - VST - 5510 Single"; test ! -e "$target"; stage="/tmp/5510-single-stage"; rm -rf "$stage"; mkdir -p "$stage"; unzip -q /tmp/5510-single-0.1.0-mpc.zip -d "$stage"; test -f "$stage/TROLLfx - VST - 5510 Single/VST/5510-single-arm32.so"; install -d "/media/SSD250g/VST2 Plugins"; cp -a "$stage/TROLLfx - VST - 5510 Single" "$target"; chmod 755 "$target/VST/5510-single-arm32.so"; sha256sum "$target/VST/5510-single-arm32.so"; ls -la "$target"'
+ssh akai-force '...verify package SHA-256; unzip to a unique staging directory; confirm UID T55S; verify ARMv7 binary SHA-256; move only the new folder into "/media/SSD250g/VST2 Plugins"...'
 ```
 
-Compare the installed binary SHA-256 with the ARMv7 hash above. If the Force filesystem reports `noexec`, do not change mount settings; plugin loading is performed by the host's loader. If discovery needs a host restart, save the project and ask before interrupting any active audio session. No restart is authorized by this handoff.
+### Load and audition
 
-Rollback affects only this newly named plugin folder:
+On the Force, open an audio track or mixer channel that carries live audio, tap an unused insert slot, then choose **External Plugins → TROLLfx → 5510 Single**. Its one touchscreen page / Q-Link bank exposes Algorithm, Time, Feedback, Wet, Rate, Depth, and Bypass. Set Bypass off and Wet to taste. Choose **TROLLfx Delay** and adjust Time/Feedback; then choose **TROLLfx Chorus** and adjust Rate/Depth. Check the track's stereo output meters while auditioning.
+
+If the plugin is absent from the External Plugins browser, do not interrupt an active session. Save the project and request/perform a plugin rescan or MPC restart only when ready; neither has been performed here.
+
+Rollback affects only this plugin folder:
 
 ```sh
 ssh akai-force 'rm -rf -- "/media/SSD250g/VST2 Plugins/TROLLfx - VST - 5510 Single"'
