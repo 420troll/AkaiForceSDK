@@ -1,0 +1,10 @@
+# Original hand-authored ES5510 microprogram; no Ensoniq firmware involved.
+# Copies the dry-right serial lane to processed-left and dry-left to processed-right.
+# Three 48-bit words; sources are special registers 0xee (SER2R), 0xef (SER2L),
+# destinations 0xf1 (SER3L), 0xf0 (SER3R); final word is END.
+ES5510_BUNDLE 1
+sample_rate 44100
+host_serial 0x20
+instruction 0x0000eef19000
+instruction 0x0000eff09000
+instruction 0x00000000f000

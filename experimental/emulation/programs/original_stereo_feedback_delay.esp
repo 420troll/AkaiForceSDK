@@ -1,0 +1,25 @@
+# Original TROLLfx ES5510 microprogram. This is not Ensoniq firmware.
+# Two independent 11025-frame feedback delays in the 882000-word ring.
+# Inputs: SER2L/R. Outputs: SER3L/R. GPR 40 is Q22 feedback (~0.55).
+ES5510_BUNDLE 1
+sample_rate 44100
+host_serial 0x20
+spr 244 0
+spr 245 0x0d754f
+spr 248 0
+gpr 0 0x002b11
+gpr 1 0x06e5b9
+gpr 6 0
+gpr 7 0x06baa8
+gpr 40 0x233333
+instruction 0xffffef0a9000
+instruction 0xffffee0b9000
+instruction 0x280e000c9c30
+instruction 0x280f000d9c30
+instruction 0xffff0e0a0030
+instruction 0xffff0f0b0030
+instruction 0xffff0a009508
+instruction 0xffff0b009508
+instruction 0xffff0af19030
+instruction 0xffff0bf09030
+instruction 0xfffffffff000
